@@ -86,7 +86,7 @@ app_license = "mit"
 # ------------
 
 # before_install = "assistiq_widget.install.before_install"
-# after_install = "assistiq_widget.install.after_install"
+after_install = "assistiq_widget.install.after_install"
 
 # Uninstallation
 # ------------
