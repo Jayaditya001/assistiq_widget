@@ -64,7 +64,7 @@ setTimeout(function() {
 
   var hdr = document.createElement('div');
   hdr.className = 'aiqf-hdr';
-  hdr.innerHTML = '<div><div class="aiqf-htitle">AssistIQ Assistant</div><div class="aiqf-hsub">Claude · Frappe ERP</div></div><div class="aiqf-hlive"><div class="aiqf-hdot"></div>Live</div><button class="aiqf-close" id="aiqf-close-btn">&times;</button>';
+  hdr.innerHTML = '<div><div class="aiqf-htitle">AssistIQ Assistant</div><div class="aiqf-hsub"></div></div><div class="aiqf-hlive"><div class="aiqf-hdot"></div>Live</div><button class="aiqf-close" id="aiqf-close-btn">&times;</button>';
   panel.appendChild(hdr);
 
   var msgs_el = document.createElement('div');
@@ -73,7 +73,7 @@ setTimeout(function() {
 
   var bottom = document.createElement('div');
   bottom.className = 'aiqf-bottom';
-  bottom.innerHTML = '<div class="aiqf-bottom-inner"><div class="aiqf-suggs"><button class="aiqf-sugg" data-q="Show all open leads">Open leads</button><button class="aiqf-sugg" data-q="List recent sales orders">Recent sales orders</button><button class="aiqf-sugg" data-q="Show stock balance">Stock balance</button><button class="aiqf-sugg" data-q="How many employees do we have?">Employees</button></div><div class="aiqf-row"><textarea id="aiqf-text" class="aiqf-textarea" placeholder="Ask anything about your ERP data…" rows="1"></textarea><button id="aiqf-sb" class="aiqf-sendbtn"><svg width="16" height="16" fill="#fff" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button></div><div class="aiqf-ft">Connected to Frappe ERP · Powered by Claude AI</div></div>';
+  bottom.innerHTML = '<div class="aiqf-bottom-inner"><div class="aiqf-suggs"><button class="aiqf-sugg" data-q="Show all open leads">Open leads</button><button class="aiqf-sugg" data-q="List recent sales orders">Recent sales orders</button><button class="aiqf-sugg" data-q="Show stock balance">Stock balance</button><button class="aiqf-sugg" data-q="How many employees do we have?">Employees</button></div><div class="aiqf-row"><textarea id="aiqf-text" class="aiqf-textarea" placeholder="Ask anything about your ERP data…" rows="1"></textarea><button id="aiqf-sb" class="aiqf-sendbtn"><svg width="16" height="16" fill="#fff" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button></div><div class="aiqf-ft"></div></div>';
   panel.appendChild(bottom);
 
   var text_el = document.getElementById('aiqf-text');
