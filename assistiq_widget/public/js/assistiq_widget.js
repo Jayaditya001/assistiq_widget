@@ -59,6 +59,34 @@ setTimeout(function() {
   btn.id = 'aiq-float-btn';
   btn.title = 'AssistIQ';
   btn.innerHTML = '<img src="/assets/assistiq_widget/ai-assistant.png" width="30" height="30" style="object-fit:contain;">';
+
+  // Load site branding
+  fetch('/api/method/frappe.client.get_value?doctype=System+Settings&fieldname=["assistiq_color","assistiq_icon"]', {
+    headers: {'X-Frappe-CSRF-Token': frappe.csrf_token || '', 'X-Requested-With': 'XMLHttpRequest'},
+    credentials: 'same-origin'
+  }).then(function(r){return r.json();}).then(function(d){
+    var msg = d.message || {};
+    var color = msg.assistiq_color || '#0464a8';
+    var icon = msg.assistiq_icon || '/assets/assistiq_widget/ai-assistant.png';
+    btn.style.background = color;
+    if(icon) btn.innerHTML = '<img src="'+icon+'" width="30" height="30" style="object-fit:contain;">';
+    var hdr = document.querySelector('.aiqf-hdr');
+    if(hdr) hdr.style.background = color;
+    var sb = document.querySelector('.aiqf-sendbtn');
+    if(sb) sb.style.background = color;
+    var av = document.querySelectorAll('.aiqf-av.user');
+    av.forEach(function(a){ a.style.background = color; });
+    // Update suggestion box colors to match theme
+    var hex = color.replace('#','');
+    var r = parseInt(hex.substring(0,2),16);
+    var g = parseInt(hex.substring(2,4),16);
+    var b = parseInt(hex.substring(4,6),16);
+    var lightBg = 'rgba('+r+','+g+','+b+',0.08)';
+    var lightBorder = 'rgba('+r+','+g+','+b+',0.2)';
+    var style = document.getElementById('aiqf-dynamic-style');
+    if(!style){ style = document.createElement('style'); style.id = 'aiqf-dynamic-style'; document.head.appendChild(style); }
+    style.textContent = '.aiqf-sugg-full{background:'+lightBg+' !important;border-color:'+lightBorder+' !important;color:'+color+' !important;} .aiqf-sugg-full:hover{background:rgba('+r+','+g+','+b+',0.15) !important;}';
+  }).catch(function(){});
   var overlay=document.createElement("div");overlay.id="aiq-overlay";document.body.appendChild(overlay);document.body.appendChild(btn);
 
   var panel = document.createElement('div');
