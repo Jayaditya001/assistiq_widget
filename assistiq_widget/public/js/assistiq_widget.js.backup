@@ -10,11 +10,11 @@ setTimeout(function() {
 
   var s = document.createElement('style');
   s.textContent = [
-    '#aiq-float-btn{position:fixed;bottom:28px;right:28px;width:54px;height:54px;background:#0464a8;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(37,99,235,.45);z-index:99999}',
+    '#aiq-float-btn{position:fixed;bottom:28px;right:28px;width:54px;height:54px;background:#2563eb;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(37,99,235,.45);z-index:99999}',
     '#aiq-float-btn:hover{transform:scale(1.08)}',
     '#aiq-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99997;display:none;backdrop-filter:blur(2px)} #aiq-overlay.open{display:block} #aiq-float-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:860px;max-width:95vw;height:85vh;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);z-index:99998;display:none;flex-direction:column;overflow:hidden}',
     '#aiq-float-panel.open{display:flex}',
-    '.aiqf-hdr{padding:16px 24px;background:#0464a8;display:flex;align-items:center;gap:12px;flex-shrink:0}',
+    '.aiqf-hdr{padding:16px 24px;background:#2563eb;display:flex;align-items:center;gap:12px;flex-shrink:0}',
     '.aiqf-htitle{font-size:18px;font-weight:700;color:#fff}',
     '.aiqf-hsub{font-size:12px;color:rgba(255,255,255,.75)}',
     '.aiqf-hlive{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#fff}',
@@ -24,11 +24,11 @@ setTimeout(function() {
     '.aiqf-msg{display:flex;gap:10px}',
     '.aiqf-msg.user{flex-direction:row-reverse}',
     '.aiqf-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}',
-    '.aiqf-av.bot{background:#dbeafe;color:#0464a8}',
-    '.aiqf-av.user{background:#0464a8;color:#fff}',
+    '.aiqf-av.bot{background:#dbeafe;color:#2563eb}',
+    '.aiqf-av.user{background:#2563eb;color:#fff}',
     '.aiqf-bubble{max-width:75%;padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.7;word-break:break-word}',
     '.aiqf-msg.bot .aiqf-bubble{background:#f1f5f9;color:#0f172a;border-top-left-radius:4px}',
-    '.aiqf-msg.user .aiqf-bubble{background:#0464a8;color:#fff;border-top-right-radius:4px}',
+    '.aiqf-msg.user .aiqf-bubble{background:#2563eb;color:#fff;border-top-right-radius:4px}',
     '.aiqf-bubble table{border-collapse:collapse;font-size:13px;margin:8px 0;width:100%}',
     '.aiqf-bubble th{text-align:left;padding:8px 12px;background:#dbeafe;color:#1e40af;font-weight:600}',
     '.aiqf-bubble td{padding:8px 12px;border-top:1px solid #e2e8f0}',
@@ -43,22 +43,19 @@ setTimeout(function() {
     '.aiqf-bottom-inner{max-width:900px;margin:0 auto}',
     '.aiqf-suggs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}',
     '.aiqf-sugg{border:1px solid #e2e8f0;background:#fff;border-radius:20px;padding:6px 14px;font-size:12px;color:#475569;cursor:pointer}',
-    '.aiqf-sugg:hover{border-color:#0464a8;color:#0464a8;background:#eff6ff}',
+    '.aiqf-sugg:hover{border-color:#2563eb;color:#2563eb;background:#eff6ff}',
     '.aiqf-row{display:flex;gap:10px;align-items:flex-end}',
     '.aiqf-textarea{flex:1;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px 16px;font-size:14px;font-family:inherit;resize:none;outline:none;max-height:120px;line-height:1.5;color:#0f172a;background:#f8fafc;box-sizing:border-box}',
-    '.aiqf-textarea:focus{border-color:#0464a8;background:#fff}',
-    '.aiqf-sendbtn{width:44px;height:44px;border-radius:50%;background:#0464a8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
-    '.aiqf-ft{font-size:11px;color:#94a3b8;text-align:center;margin-top:8px}',
-    '.aiqf-sugg-title{font-size:12px;color:#94a3b8;margin-bottom:8px;font-weight:500}',
-    '.aiqf-sugg-full{display:block;width:100%;text-align:left;border:1px solid #dbeafe;background:#f0f7ff;border-radius:16px;padding:12px 18px;font-size:13px;color:#0464a8;cursor:pointer;margin-bottom:8px;transition:all 0.2s}',
-    '.aiqf-sugg-full:hover{border-color:#0464a8;color:#0464a8;background:#eff6ff}'
+    '.aiqf-textarea:focus{border-color:#2563eb;background:#fff}',
+    '.aiqf-sendbtn{width:44px;height:44px;border-radius:50%;background:#2563eb;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
+    '.aiqf-ft{font-size:11px;color:#94a3b8;text-align:center;margin-top:8px}'
   ].join('');
   document.head.appendChild(s);
 
   var btn = document.createElement('button');
   btn.id = 'aiq-float-btn';
   btn.title = 'AssistIQ';
-  btn.innerHTML = '<img src="/assets/assistiq_widget/ai-assistant.png" width="30" height="30" style="object-fit:contain;">';
+  btn.innerHTML = '<svg width="24" height="24" fill="#fff" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>';
   var overlay=document.createElement("div");overlay.id="aiq-overlay";document.body.appendChild(overlay);document.body.appendChild(btn);
 
   var panel = document.createElement('div');
@@ -76,67 +73,7 @@ setTimeout(function() {
 
   var bottom = document.createElement('div');
   bottom.className = 'aiqf-bottom';
-  var AIQF_SUGGS = {
-    'selling': [['Open opportunities','Show me open opportunities over 5L that have not been touched in 14 days'],['Draft quotation','Draft a quotation for my last customer with same items'],['Sales performance','Which sales reps are behind quota this quarter and by how much?'],['Customer communication','Summarize all communication with our top customer in the last month']],
-    'buying': [['RFQ status','Which suppliers have not responded to our last RFQ?'],['Create PO','Create a Purchase Order from the latest Material Request'],['Supplier comparison','Compare pricing across our top 3 suppliers for the most ordered item'],['Invoice mismatch','Flag any Purchase Invoices that do not match their PO amount']],
-    'accounts': [['AR aging','What is our AR aging by customer over 60 days?'],['P&L summary','Summarize this month P&L vs last month in plain English'],['Overdue invoices','List invoices overdue by more than 30 days with contact emails'],['Expense analysis','Why did expenses jump last month?']],
-    'stock': [['Low stock','What items are below reorder level?'],['Slow moving','Which items have not moved in 90 days?'],['Stock transfer','Create a stock entry to transfer items between warehouses'],['Stock valuation','Show current stock valuation by warehouse']],
-    'manufacturing': [['Work order status','Which Work Orders are behind their planned end date?'],['BOM cost','What is driving the cost increase in our main BOM?'],['Create work order','Create a Work Order for our top selling item'],['Scrap report','Show scrap percentage by work center this month']],
-    'hrms': [['Leave summary','Who is on approved leave next week?'],['Attendance','Summarize attendance regularity by department this month'],['Payroll check','Flag any employee whose payroll differs from last month by more than 15 percent'],['Onboarding','What is the status of onboarding tasks for our latest joiner?']],
-    'projects': [['Overdue tasks','Which tasks are overdue across all active projects?'],['Budget burn','How much of our top project budget has been consumed?'],['Resource allocation','Who is overallocated across projects this week?'],['Task breakdown','Break down our current project into tasks with estimated hours']],
-    'support': [['SLA breach','Which open tickets are about to breach SLA?'],['Ticket triage','Summarize all unresolved tickets for our top customer'],['Recurring issues','What are the top 5 recurring issue categories this month?'],['Draft response','Draft a first response to our oldest open ticket']],
-    'assets': [['Maintenance due','Which assets are due for maintenance in the next 30 days?'],['Depreciation','What is the depreciated value of our assets as of today?'],['Idle assets','List idle assets not assigned to any active project or location']],
-    'quality': [['Rejection reasons','What are the most common rejection reasons this quarter?'],['Inspection pass rate','Summarize quality inspection pass rate by supplier'],['Non conformance','Show open non conformances this month']],
-    'crm': [['Contact summary','Summarize everything we know about our top lead from calls and emails'],['Campaign performance','Which campaign had the best conversion this quarter?'],['Deal progression','Show deal stage progression for open opportunities']],
-    'default': [['Open leads','Show all open leads'],['Sales orders','List recent sales orders'],['Stock balance','Show stock balance'],['Employees','How many employees do we have?']]
-  };
-  var AIQF_MODULE_MAP = {
-    'selling': 'selling', 'buying': 'buying', 'accounts': 'accounts',
-    'stock': 'stock', 'manufacturing': 'manufacturing', 'hrms': 'hrms',
-    'hr': 'hrms', 'projects': 'projects', 'support': 'support',
-    'assets': 'assets', 'quality management': 'quality', 'crm': 'crm'
-  };
-  function aiqf_getModule(callback){
-    var route = frappe.get_route();
-    if(!route){ callback('default'); return; }
-    var routeType = route[0] && route[0].toLowerCase();
-    // Workspace pages
-    if(routeType === 'workspaces' && route[1]){
-      var ws = route[1].toLowerCase();
-      for(var key in AIQF_MODULE_MAP){ if(ws.indexOf(key) !== -1){ callback(AIQF_MODULE_MAP[key]); return; } }
-      callback('default'); return;
-    }
-    // List or Form pages - use doctype module
-    var doctype = route[1];
-    if(doctype && (routeType === 'list' || routeType === 'form')){
-      frappe.model.with_doctype(doctype, function(){
-        var meta = frappe.get_meta(doctype);
-        var mod = meta && meta.module ? meta.module.toLowerCase() : 'default';
-        for(var key in AIQF_MODULE_MAP){ if(mod.indexOf(key) !== -1){ callback(AIQF_MODULE_MAP[key]); return; } }
-        callback('default');
-      });
-      return;
-    }
-    callback('default');
-  }
-  function aiqf_renderSuggs(){
-    aiqf_getModule(function(module){
-      var suggs = AIQF_SUGGS[module] || AIQF_SUGGS['default'];
-      var el = document.querySelector('.aiqf-suggs');
-      if(el){
-        el.innerHTML = '<div class="aiqf-sugg-title">Suggestions</div>' +
-          suggs.map(function(s){return '<button class="aiqf-sugg-full" data-q="'+s[1]+'">'+s[1]+'</button>';}).join('');
-        el.querySelectorAll('.aiqf-sugg-full').forEach(function(b){
-          b.addEventListener('click',function(){
-            text_el.value=b.getAttribute('data-q');
-            el.style.display='none';
-            aiqf_send();
-          });
-        });
-      }
-    });
-  }
-  bottom.innerHTML = '<div class="aiqf-bottom-inner"><div class="aiqf-suggs"></div><div class="aiqf-row"><textarea id="aiqf-text" class="aiqf-textarea" placeholder="Ask anything about your ERP data…" rows="1"></textarea><button id="aiqf-sb" class="aiqf-sendbtn"><svg width="16" height="16" fill="#fff" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button></div><div class="aiqf-ft"></div></div>';
+  bottom.innerHTML = '<div class="aiqf-bottom-inner"><div class="aiqf-suggs"><button class="aiqf-sugg" data-q="Show all open leads">Open leads</button><button class="aiqf-sugg" data-q="List recent sales orders">Recent sales orders</button><button class="aiqf-sugg" data-q="Show stock balance">Stock balance</button><button class="aiqf-sugg" data-q="How many employees do we have?">Employees</button></div><div class="aiqf-row"><textarea id="aiqf-text" class="aiqf-textarea" placeholder="Ask anything about your ERP data…" rows="1"></textarea><button id="aiqf-sb" class="aiqf-sendbtn"><svg width="16" height="16" fill="#fff" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button></div><div class="aiqf-ft"></div></div>';
   panel.appendChild(bottom);
 
   var text_el = document.getElementById('aiqf-text');
@@ -277,13 +214,13 @@ setTimeout(function() {
   btn.addEventListener('click',function(){
     isOpen=!isOpen;
     panel.classList.toggle('open',isOpen);overlay.classList.toggle('open',isOpen);
-    if(isOpen&&!panel.dataset.inited){aiqf_addBot('👋 Hi! I am AssistIQ, your ERP assistant. Ask me anything!');panel.dataset.inited='1';} aiqf_renderSuggs();
-    if(isOpen){setTimeout(function(){text_el.focus();},100); aiqf_renderSuggs();}
+    if(isOpen&&!panel.dataset.inited){aiqf_addBot('👋 Hi! I am AssistIQ, your ERP assistant. Ask me anything!');panel.dataset.inited='1';}
+    if(isOpen)setTimeout(function(){text_el.focus();},100);
   });
   close_btn.addEventListener('click',function(){isOpen=false;panel.classList.remove('open');overlay.classList.remove('open');});
   send_btn.addEventListener('click',aiqf_send);
   text_el.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();aiqf_send();}});
   text_el.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';});
-  aiqf_renderSuggs();
+  bottom.querySelectorAll('.aiqf-sugg').forEach(function(b){b.addEventListener('click',function(){text_el.value=b.getAttribute('data-q');aiqf_send();});});
 
 }, 3000);
