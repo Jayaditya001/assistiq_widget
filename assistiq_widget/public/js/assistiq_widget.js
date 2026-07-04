@@ -80,6 +80,10 @@ setTimeout(function() {
     if(sb) sb.style.background = color;
     var av = document.querySelectorAll('.aiqf-av.user');
     av.forEach(function(a){ a.style.background = color; });
+    // Update user chat bubble color
+    var style2 = document.getElementById('aiqf-bubble-style');
+    if(!style2){ style2 = document.createElement('style'); style2.id = 'aiqf-bubble-style'; document.head.appendChild(style2); }
+    style2.textContent = '.aiqf-msg.user .aiqf-bubble{background:'+color+' !important;} .aiqf-av.user{background:'+color+' !important;}';
     // Update suggestion box colors to match theme
     var hex = color.replace('#','');
     var r = parseInt(hex.substring(0,2),16);
