@@ -50,10 +50,6 @@ setTimeout(function() {
     '.aiqf-sendbtn{width:44px;height:44px;border-radius:50%;background:#0464a8;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}',
     '.aiqf-ft{font-size:11px;color:#94a3b8;text-align:center;margin-top:8px}',
     '.aiqf-sugg-title{font-size:12px;color:#94a3b8;margin-bottom:8px;font-weight:500}',
-    '.aiqf-sugg-toggle{border:1px solid #dbeafe;background:#f0f7ff;border-radius:20px;padding:6px 14px;font-size:12px;color:#0464a8;cursor:pointer;font-family:inherit}',
-    '.aiqf-sugg-close{background:none;border:none;cursor:pointer;font-size:16px;color:#94a3b8;line-height:1;padding:0}',
-    '.aiqf-sugg-close:hover{color:#475569}',
-    '.aiqf-sugg-toggle:hover{background:#dbeafe}',
     '.aiqf-sugg-full{display:block;width:100%;text-align:left;border:1px solid #dbeafe;background:#f0f7ff;border-radius:16px;padding:12px 18px;font-size:13px;color:#0464a8;cursor:pointer;margin-bottom:8px;transition:all 0.2s}',
     '.aiqf-sugg-full:hover{border-color:#0464a8;color:#0464a8;background:#eff6ff}'
   ].join('');
@@ -151,28 +147,17 @@ setTimeout(function() {
     }
     callback('default');
   }
-  function aiqf_collapseSuggs(){
-    var el = document.querySelector('.aiqf-suggs');
-    if(!el) return;
-    el.innerHTML = '<button class="aiqf-sugg-toggle">💡 Suggestions</button>';
-    el.querySelector('.aiqf-sugg-toggle').addEventListener('click', function(){
-      aiqf_renderSuggs(true);
-    });
-  }
-
-  function aiqf_renderSuggs(expanded){
+  function aiqf_renderSuggs(){
     aiqf_getModule(function(module){
       var suggs = AIQF_SUGGS[module] || AIQF_SUGGS['default'];
       var el = document.querySelector('.aiqf-suggs');
       if(el){
-        el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;width:100%"><div class="aiqf-sugg-title" style="margin-bottom:0">Suggestions</div><button class="aiqf-sugg-close">&times;</button></div>' +
+        el.innerHTML = '<div class="aiqf-sugg-title">Suggestions</div>' +
           suggs.map(function(s){return '<button class="aiqf-sugg-full" data-q="'+s[1]+'">'+s[1]+'</button>';}).join('');
-        var closeBtn = el.querySelector('.aiqf-sugg-close');
-        if(closeBtn) closeBtn.addEventListener('click', function(){ aiqf_collapseSuggs(); });
         el.querySelectorAll('.aiqf-sugg-full').forEach(function(b){
           b.addEventListener('click',function(){
             text_el.value=b.getAttribute('data-q');
-            aiqf_collapseSuggs();
+            el.style.display='none';
             aiqf_send();
           });
         });
