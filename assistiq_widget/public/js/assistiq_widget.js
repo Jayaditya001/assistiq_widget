@@ -41,7 +41,7 @@ setTimeout(function() {
     '@keyframes aiqfB{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}',
     '.aiqf-bottom{flex-shrink:0;border-top:1px solid #e2e8f0;background:#fff;padding:16px 24px}',
     '.aiqf-bottom-inner{max-width:900px;margin:0 auto}',
-    '.aiqf-suggs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}',
+    '.aiqf-suggs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;max-height:280px;overflow-y:auto;padding-right:4px}',
     '.aiqf-sugg{border:1px solid #e2e8f0;background:#fff;border-radius:20px;padding:6px 14px;font-size:12px;color:#475569;cursor:pointer}',
     '.aiqf-sugg:hover{border-color:#0464a8;color:#0464a8;background:#eff6ff}',
     '.aiqf-row{display:flex;gap:10px;align-items:flex-end}',
@@ -54,8 +54,10 @@ setTimeout(function() {
     '.aiqf-sugg-close{background:none;border:none;cursor:pointer;font-size:16px;color:#94a3b8;line-height:1;padding:0}',
     '.aiqf-sugg-close:hover{color:#475569}',
     '.aiqf-sugg-toggle:hover{background:#dbeafe}',
-    '.aiqf-sugg-full{display:block;width:100%;text-align:left;border:1px solid #dbeafe;background:#f0f7ff;border-radius:16px;padding:12px 18px;font-size:13px;color:#0464a8;cursor:pointer;margin-bottom:8px;transition:all 0.2s}',
-    '.aiqf-sugg-full:hover{border-color:#0464a8;color:#0464a8;background:#eff6ff}'
+    '.aiqf-sugg-full{display:block;width:100%;text-align:left;border:1px solid #dbeafe;background:#f0f7ff;border-radius:12px;padding:8px 14px;font-size:13px;color:#0464a8;cursor:pointer;margin-bottom:6px;transition:all 0.2s;line-height:1.3}',
+    '.aiqf-sugg-full:hover{border-color:#0464a8;color:#0464a8;background:#eff6ff}',
+    '.aiqf-sugg-cat{padding:6px 12px;border-radius:8px;border:1.5px solid #fed7aa;background:#fff;cursor:pointer;font-size:12px;color:#c2410c;flex-shrink:0}',
+    '.aiqf-sugg-cat-active{background:#ea580c;color:#fff;border-color:#ea580c}'
   ].join('');
   document.head.appendChild(s);
 
@@ -93,7 +95,7 @@ setTimeout(function() {
     var lightBorder = 'rgba('+r+','+g+','+b+',0.2)';
     var style = document.getElementById('aiqf-dynamic-style');
     if(!style){ style = document.createElement('style'); style.id = 'aiqf-dynamic-style'; document.head.appendChild(style); }
-    style.textContent = '.aiqf-sugg-full{background:'+lightBg+' !important;border-color:'+lightBorder+' !important;color:'+color+' !important;} .aiqf-sugg-full:hover{background:rgba('+r+','+g+','+b+',0.15) !important;}';
+    style.textContent = '.aiqf-sugg-full{background:'+lightBg+' !important;border-color:'+lightBorder+' !important;color:'+color+' !important;} .aiqf-sugg-full:hover{background:rgba('+r+','+g+','+b+',0.15) !important;} .aiqf-sugg-cat{border-color:'+lightBorder+' !important;color:'+color+' !important;background:#fff !important;} .aiqf-sugg-cat-active{background:'+color+' !important;color:#fff !important;border-color:'+color+' !important;}';
   }).catch(function(){});
   var overlay=document.createElement("div");overlay.id="aiq-overlay";document.body.appendChild(overlay);document.body.appendChild(btn);
 
@@ -118,47 +120,176 @@ setTimeout(function() {
   var bottom = document.createElement('div');
   bottom.className = 'aiqf-bottom';
   var AIQF_SUGGS = {
-    'selling': [['Open opportunities','Show me open opportunities over 5L that have not been touched in 14 days'],['Draft quotation','Draft a quotation for my last customer with same items'],['Sales performance','Which sales reps are behind quota this quarter and by how much?'],['Customer communication','Summarize all communication with our top customer in the last month']],
-    'buying': [['RFQ status','Which suppliers have not responded to our last RFQ?'],['Create PO','Create a Purchase Order from the latest Material Request'],['Supplier comparison','Compare pricing across our top 3 suppliers for the most ordered item'],['Invoice mismatch','Flag any Purchase Invoices that do not match their PO amount']],
-    'accounts': [['AR aging','What is our AR aging by customer over 60 days?'],['P&L summary','Summarize this month P&L vs last month in plain English'],['Overdue invoices','List invoices overdue by more than 30 days with contact emails'],['Expense analysis','Why did expenses jump last month?']],
-    'stock': [['Low stock','What items are below reorder level?'],['Slow moving','Which items have not moved in 90 days?'],['Stock transfer','Create a stock entry to transfer items between warehouses'],['Stock valuation','Show current stock valuation by warehouse']],
-    'manufacturing': [['Work order status','Which Work Orders are behind their planned end date?'],['BOM cost','What is driving the cost increase in our main BOM?'],['Create work order','Create a Work Order for our top selling item'],['Scrap report','Show scrap percentage by work center this month']],
-    'hrms': [['Leave summary','Who is on approved leave next week?'],['Attendance','Summarize attendance regularity by department this month'],['Payroll check','Flag any employee whose payroll differs from last month by more than 15 percent'],['Onboarding','What is the status of onboarding tasks for our latest joiner?']],
-    'projects': [['Overdue tasks','Which tasks are overdue across all active projects?'],['Budget burn','How much of our top project budget has been consumed?'],['Resource allocation','Who is overallocated across projects this week?'],['Task breakdown','Break down our current project into tasks with estimated hours']],
-    'support': [['SLA breach','Which open tickets are about to breach SLA?'],['Ticket triage','Summarize all unresolved tickets for our top customer'],['Recurring issues','What are the top 5 recurring issue categories this month?'],['Draft response','Draft a first response to our oldest open ticket']],
-    'assets': [['Maintenance due','Which assets are due for maintenance in the next 30 days?'],['Depreciation','What is the depreciated value of our assets as of today?'],['Idle assets','List idle assets not assigned to any active project or location']],
-    'quality': [['Rejection reasons','What are the most common rejection reasons this quarter?'],['Inspection pass rate','Summarize quality inspection pass rate by supplier'],['Non conformance','Show open non conformances this month']],
-    'crm': [['Contact summary','Summarize everything we know about our top lead from calls and emails'],['Campaign performance','Which campaign had the best conversion this quarter?'],['Deal progression','Show deal stage progression for open opportunities']],
-    'default': [['Open leads','Show all open leads'],['Sales orders','List recent sales orders'],['Stock balance','Show stock balance'],['Employees','How many employees do we have?']]
+    'selling': {
+      'Selling': [['Draft quotation','Create and save a draft quotation for a customer'],['Drafts for review','Show all draft quotations pending for review'],['Update & submit','Update and submit a quotation'],['Convert to order','Convert a quotation into a sales order'],['Today\'s sales orders','Show today\'s sales orders'],['Pending sales orders','Show pending sales orders'],['Top customers','Show top-selling customers this month']],
+      'Selling Analytics': [['Today\'s sales','Show today\'s sales'],['Monthly sales','Show monthly sales'],['Vs last month','Compare sales with last month'],['Sales trend','Show sales trend'],['By product','Show sales by product'],['By customer','Show sales by customer'],['By salesperson','Show sales by salesperson'],['Growth','Show sales growth']]
+    },
+    'buying': [['Pending POs','Show pending purchase orders'],['Create PO','Create a purchase order for a supplier'],['Purchases this month','Show purchases made this month'],['Delayed suppliers','Which suppliers have delayed deliveries?']],
+    'accounts': [['Today\'s receivables','Show today\'s receivables'],['Overdue payments','Show overdue customer payments'],['P&L this month','Show profit and loss for this month'],['Top outstanding','Show customers with the highest outstanding balance']],
+    'stock': [['Stock levels','Show current stock levels'],['Below reorder','Which products are below reorder level?'],['Out of stock','Show out-of-stock products'],['Warehouse stock','Which warehouse has stock for a product?']],
+    'manufacturing': [['Open production','Show open production orders'],['Production status','Show today\'s production status'],['Raw materials needed','Which raw materials are required for production?'],['Delayed orders','Show delayed manufacturing orders']],
+    'hrms': [['Absent today','Show employees absent today'],['Attendance summary','Show today\'s attendance summary'],['On leave this week','Show employees on leave this week'],['Pending leave requests','Show pending leave requests']],
+    'projects': [['Active projects','Show active projects'],['Behind schedule','Show projects behind schedule'],['Tasks due','Show tasks due this week'],['Cost & progress','Show project-wise cost and progress']],
+    'support': [['Open tickets','Show open support tickets'],['High priority','Show high-priority tickets'],['Pending >3 days','Show tickets pending for more than 3 days'],['Most issues','Which customers have the most support issues?']],
+    'assets': [['Active assets','Show all active assets'],['Maintenance due','Show assets due for maintenance'],['Assigned assets','Show assets assigned to an employee'],['Purchased this year','Show assets purchased this year']],
+    'quality': [['Pending inspections','Show pending quality inspections'],['Failed inspections','Show failed quality inspections'],['Most issues','Which products have the most quality issues?'],['Monthly summary','Show quality inspection summary for this month']],
+    'crm': [['New leads','Show new leads this week'],['Follow-ups due','Show follow-ups due today'],['High-value deals','Show high-value opportunities'],['Likely to convert','Which leads are most likely to convert?']],
+    'default': [['Sales orders','Show today\'s sales orders'],['Stock levels','Show current stock levels'],['Pending POs','Show pending purchase orders'],['Employees','How many employees do we have?']]
+  };
+  var AIQF_PAGE_SUGGS = {
+    'customer': {
+      'Customer Management': [
+        ['Create customer','Create a new customer'],
+        ['Show profile','Show customer profile'],
+        ['Show ledger','Show customer ledger'],
+        ['Show outstanding','Show customer outstanding']
+      ],
+      'Customer Intelligence': [
+        ['Inactive 90 days','Show customers who haven\'t ordered in 90 days'],
+        ['Repeat customers','Show repeat customers'],
+        ['Top 5 customers','Show top 5 customers'],
+        ['Payment history','Show customer payment history']
+      ]
+    },
+    'lead': {
+      'Suggestions': [
+        ['Create lead','Create a new lead'],
+        ['New leads today','Show today\'s new leads'],
+        ['Hot leads','Show hot leads'],
+        ['Follow-ups due','Show follow-ups due today'],
+        ['Convert to customer','Convert lead into customer'],
+        ['Conversion ratio','Show conversion ratio'],
+        ['Pipeline','Show opportunity pipeline'],
+        ['High-value deals','Show high-value opportunities']
+      ]
+    },
+    'opportunity': {
+      'Suggestions': [
+        ['Create lead','Create a new lead'],
+        ['New leads today','Show today\'s new leads'],
+        ['Hot leads','Show hot leads'],
+        ['Follow-ups due','Show follow-ups due today'],
+        ['Convert to customer','Convert lead into customer'],
+        ['Conversion ratio','Show conversion ratio'],
+        ['Pipeline','Show opportunity pipeline'],
+        ['High-value deals','Show high-value opportunities']
+      ]
+    },
+    'quotation': {
+      'Suggestions': [
+        ['Create quotation','Create quotation for a customer'],
+        ['Pending quotations','Show pending quotations'],
+        ['Expired quotations','Show expired quotations'],
+        ['Compare quotations','Compare quotations'],
+        ['Suggest discount','Suggest discount'],
+        ['Quotation history','Show quotation history']
+      ]
+    },
+    'sales order': {
+      'Suggestions': [
+        ['Create order','Create sales order'],
+        ['From quotation','Convert quotation into sales order'],
+        ['Pending orders','Show pending sales orders'],
+        ['Open orders','Show open orders'],
+        ['Delayed orders','Show delayed orders'],
+        ['Today\'s orders','Show today\'s orders'],
+        ['This month\'s orders','Show this month\'s orders'],
+        ['Highest value','Show highest value orders']
+      ]
+    },
+    'sales invoice': {
+      'Suggestions': [
+        ['Create invoice','Create invoice'],
+        ['From sales order','Generate invoice from sales order'],
+        ['Today\'s invoices','Show today\'s invoices'],
+        ['Pending invoices','Show pending invoices'],
+        ['Overdue invoices','Show overdue invoices'],
+        ['Recalculate taxes','Recalculate taxes']
+      ]
+    },
+    'item': {
+      'Suggestions': [
+        ['Top selling','Show top selling products'],
+        ['Slow moving','Show slow moving products'],
+        ['Dead stock','Show dead stock'],
+        ['Highest margin','Show products with highest margin'],
+        ['Out of stock','Show products out of stock'],
+        ['Below reorder','Show products below reorder level'],
+        ['Cross-sell','Recommend cross-sell products'],
+        ['Frequently bought together','Show frequently purchased together products']
+      ]
+    },
+    'warehouse': {
+      'Suggestions': [
+        ['Check availability','Is a product available?'],
+        ['Stock available','How much stock is available?'],
+        ['Which warehouse','Which warehouse has stock for a product?'],
+        ['Reserved stock','Show reserved stock by customer'],
+        ['Expected arrival','Show expected stock arrival'],
+        ['Below reorder','Show products below reorder level'],
+        ['Fulfill today','Can this order be fulfilled today?']
+      ]
+    },
+    'home': {
+      'Suggestions': [
+        ['Business summary','Give me today\'s business summary'],
+        ['Pending quotations','Which quotations are pending?'],
+        ['Delayed orders','Which orders are delayed?'],
+        ['Overdue invoices','Which invoices are overdue?'],
+        ['Sales summary','Summarize sales in one page']
+      ]
+    }
   };
   var AIQF_MODULE_MAP = {
-    'selling': 'selling', 'buying': 'buying', 'accounts': 'accounts',
-    'stock': 'stock', 'manufacturing': 'manufacturing', 'hrms': 'hrms',
-    'hr': 'hrms', 'projects': 'projects', 'support': 'support',
-    'assets': 'assets', 'quality management': 'quality', 'crm': 'crm'
+    'manufacturing': 'manufacturing',
+    'quality': 'quality',
+    'accounting': 'accounts', 'accounts': 'accounts',
+    'invoicing': 'accounts', 'payments': 'accounts', 'financial report': 'accounts',
+    'banking': 'accounts', 'budget': 'accounts', 'share manage': 'accounts',
+    'subscription': 'accounts', 'taxes': 'accounts',
+    'purchase': 'buying', 'buying': 'buying',
+    'selling': 'selling', 'sales': 'selling',
+    'stock': 'stock', 'inventory': 'stock',
+    'projects': 'projects',
+    'helpdesk': 'support', 'support': 'support',
+    'assets': 'assets',
+    'crm': 'crm',
+    'payroll': 'hrms', 'hrms': 'hrms', 'hr': 'hrms',
+    'expenses': 'hrms', 'leaves': 'hrms', 'performance': 'hrms',
+    'recruitment': 'hrms', 'attendance': 'hrms', 'shift': 'hrms',
+    'tenure': 'hrms', 'benefit': 'hrms'
   };
   function aiqf_getModule(callback){
     var route = frappe.get_route();
-    if(!route){ callback('default'); return; }
-    var routeType = route[0] && route[0].toLowerCase();
-    // Workspace pages
-    if(routeType === 'workspaces' && route[1]){
-      var ws = route[1].toLowerCase();
-      for(var key in AIQF_MODULE_MAP){ if(ws.indexOf(key) !== -1){ callback(AIQF_MODULE_MAP[key]); return; } }
-      callback('default'); return;
+    if(!route || !route.length){ callback('default'); return; }
+    var routeStr = route.join(' ').toLowerCase().replace(/-/g,' ');
+    for(var key in AIQF_MODULE_MAP){
+      if(routeStr.indexOf(key) !== -1){ callback(AIQF_MODULE_MAP[key]); return; }
     }
-    // List or Form pages - use doctype module
+    var routeType = route[0] && route[0].toLowerCase();
     var doctype = route[1];
     if(doctype && (routeType === 'list' || routeType === 'form')){
       frappe.model.with_doctype(doctype, function(){
         var meta = frappe.get_meta(doctype);
-        var mod = meta && meta.module ? meta.module.toLowerCase() : 'default';
+        var mod = meta && meta.module ? meta.module.toLowerCase() : '';
         for(var key in AIQF_MODULE_MAP){ if(mod.indexOf(key) !== -1){ callback(AIQF_MODULE_MAP[key]); return; } }
         callback('default');
       });
       return;
     }
     callback('default');
+  }
+  function aiqf_getPageKey(callback){
+    var route = frappe.get_route();
+    if(!route || !route.length || route[0]==='' || route[0].toLowerCase()==='workspace' || route[0].toLowerCase()==='home'){
+      callback('home'); return;
+    }
+    var routeType = route[0] && route[0].toLowerCase();
+    var doctype = route[1] && route[1].toLowerCase();
+    if(doctype && AIQF_PAGE_SUGGS[doctype] && (routeType==='list'||routeType==='form')){
+      callback(doctype); return;
+    }
+    callback(null);
   }
   function aiqf_collapseSuggs(){
     var el = document.querySelector('.aiqf-suggs');
@@ -169,23 +300,69 @@ setTimeout(function() {
     });
   }
 
-  function aiqf_renderSuggs(expanded){
-    aiqf_getModule(function(module){
-      var suggs = AIQF_SUGGS[module] || AIQF_SUGGS['default'];
-      var el = document.querySelector('.aiqf-suggs');
-      if(el){
-        el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;width:100%"><div class="aiqf-sugg-title" style="margin-bottom:0">Suggestions</div><button class="aiqf-sugg-close">&times;</button></div>' +
-          suggs.map(function(s){return '<button class="aiqf-sugg-full" data-q="'+s[1]+'">'+s[1]+'</button>';}).join('');
-        var closeBtn = el.querySelector('.aiqf-sugg-close');
-        if(closeBtn) closeBtn.addEventListener('click', function(){ aiqf_collapseSuggs(); });
-        el.querySelectorAll('.aiqf-sugg-full').forEach(function(b){
-          b.addEventListener('click',function(){
-            text_el.value=b.getAttribute('data-q');
-            aiqf_collapseSuggs();
-            aiqf_send();
+  function aiqf_renderSuggs(expanded, activeCategory){
+    aiqf_getPageKey(function(pageKey){
+      if(pageKey){
+        var cats = AIQF_PAGE_SUGGS[pageKey];
+        var catNames = Object.keys(cats);
+        var current = activeCategory && cats[activeCategory] ? activeCategory : catNames[0];
+        var suggs = cats[current];
+        var el = document.querySelector('.aiqf-suggs');
+        if(el){
+          el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;width:100%"><div class="aiqf-sugg-title" style="margin-bottom:0">Suggestions</div><button class="aiqf-sugg-close">&times;</button></div>' +
+            (catNames.length>1 ? ('<div class="aiqf-sugg-cats" style="display:flex;gap:6px;margin-bottom:8px;width:100%">' +
+            catNames.map(function(c){return '<button class="aiqf-sugg-cat'+(c===current?' aiqf-sugg-cat-active':'')+'" data-cat="'+c+'">'+c+'</button>';}).join('') +
+            '</div>') : '') +
+            suggs.map(function(s){return '<button class="aiqf-sugg-full" data-q="'+s[1]+'">'+s[1]+'</button>';}).join('');
+          var closeBtn = el.querySelector('.aiqf-sugg-close');
+          if(closeBtn) closeBtn.addEventListener('click', function(){ aiqf_collapseSuggs(); });
+          el.querySelectorAll('.aiqf-sugg-cat').forEach(function(b){
+            b.addEventListener('click', function(){
+              aiqf_renderSuggs(true, b.getAttribute('data-cat'));
+            });
           });
-        });
+          el.querySelectorAll('.aiqf-sugg-full').forEach(function(b){
+            b.addEventListener('click',function(){
+              text_el.value=b.getAttribute('data-q');
+              aiqf_collapseSuggs();
+              aiqf_send();
+            });
+          });
+        }
+        return;
       }
+      aiqf_getModule(function(module){
+        try{console.log('[AssistIQ] route:',frappe.get_route(),'detected module:',module);}catch(e){}
+        var raw = AIQF_SUGGS[module] || AIQF_SUGGS['default'];
+        var isMulti = !Array.isArray(raw);
+        var catNames2 = isMulti ? Object.keys(raw) : null;
+        var current2 = isMulti ? (activeCategory && raw[activeCategory] ? activeCategory : catNames2[0]) : null;
+        var suggs = isMulti ? raw[current2] : raw;
+        var el = document.querySelector('.aiqf-suggs');
+        if(el){
+          el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;width:100%"><div class="aiqf-sugg-title" style="margin-bottom:0">Suggestions</div><button class="aiqf-sugg-close">&times;</button></div>' +
+            (isMulti ? ('<div class="aiqf-sugg-cats" style="display:flex;gap:6px;margin-bottom:8px;width:100%">' +
+            catNames2.map(function(c){return '<button class="aiqf-sugg-cat'+(c===current2?' aiqf-sugg-cat-active':'')+'" data-cat="'+c+'">'+c+'</button>';}).join('') +
+            '</div>') : '') +
+            suggs.map(function(s){return '<button class="aiqf-sugg-full" data-q="'+s[1]+'">'+s[1]+'</button>';}).join('');
+          var closeBtn = el.querySelector('.aiqf-sugg-close');
+          if(closeBtn) closeBtn.addEventListener('click', function(){ aiqf_collapseSuggs(); });
+          if(isMulti){
+            el.querySelectorAll('.aiqf-sugg-cat').forEach(function(b){
+              b.addEventListener('click', function(){
+                aiqf_renderSuggs(true, b.getAttribute('data-cat'));
+              });
+            });
+          }
+          el.querySelectorAll('.aiqf-sugg-full').forEach(function(b){
+            b.addEventListener('click',function(){
+              text_el.value=b.getAttribute('data-q');
+              aiqf_collapseSuggs();
+              aiqf_send();
+            });
+          });
+        }
+      });
     });
   }
   bottom.innerHTML = '<div class="aiqf-bottom-inner"><div class="aiqf-suggs"></div><div id="aiqf-attach-chip"></div><div class="aiqf-row"><input type="file" id="aiqf-file" accept="application/pdf,image/png,image/jpeg,image/webp" style="display:none;"><button id="aiqf-attach-btn" title="Attach invoice/document" style="width:40px;height:44px;flex-shrink:0;background:none;border:1.5px solid #e2e8f0;border-radius:12px;cursor:pointer;font-size:18px;color:#64748b;">📎</button><textarea id="aiqf-text" class="aiqf-textarea" placeholder="Ask anything about your ERP data…" rows="1"></textarea><button id="aiqf-sb" class="aiqf-sendbtn"><svg width="16" height="16" fill="#fff" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button></div><div class="aiqf-ft"></div></div>';
@@ -345,10 +522,10 @@ setTimeout(function() {
     aiqf_renderSuggs();
   }
 
-  var AIQF_SYS_CORE = 'You are AssistIQ, an AI-powered ERP assistant for Frappe/ERPNext. ALWAYS use tools to fetch real data — never invent field values, IDs, or numbers. Be concise. Use markdown tables. fields MUST always be an array.\n\nWhen the user asks you to draft, create, or make a document (e.g. "draft a quotation", "create a PO"): you MUST call fac_create_document to actually create a real draft record in Frappe. NEVER just describe or format a fake document in chat text — that is misleading, since the user cannot tell the difference between a real record and text you made up. After creating, always state the real document name/ID Frappe returned (e.g. "Created draft Quotation QTN-2026-00045") so the user can open and review it themselves before doing anything with it.\n\nCreated documents are drafts only (docstatus 0) unless the user explicitly asks you to submit/finalize it — submitting is a separate, deliberate action via fac_submit_document, and you should confirm with the user before doing it, since submission can trigger real business effects (emails, stock/GL updates, workflow states) that are hard to undo.\n\nIf a create or update fails (missing required field, invalid link, permission error), tell the user exactly what failed and what value is needed — do not silently make one up to force it through.\n\nFor workflow actions (approve/reject/etc.): first call fac_get_workflow_state to see the real current state and valid actions, confirm the action with the user, then call fac_run_workflow_action with the exact action name. Never claim an action succeeded without calling the tool.\n\nFor questions involving totals, averages, counts, or breakdowns by category (sales this month, average order value, invoices by customer): use fac_analyze_data instead of fetching raw records and calculating in your head — this keeps numbers accurate and responses shorter.\n\nFor questions comparing what different suppliers charge for the SAME item ("which supplier is cheapest for X", "compare prices across suppliers", "has the price changed over time"), use fac_compare_supplier_pricing instead of trying to compute this yourself — it correctly joins item-level pricing with the supplier on each purchase document, which fac_analyze_data cannot do.\n\nFor "what needs reordering" or "what\'s running low" style questions, use fac_predict_reorder instead of just checking reorder levels yourself — it factors in actual recent consumption rate to estimate days until stockout, so items barely below reorder level but moving slowly aren\'t reported with the same urgency as fast-moving items about to run out.\n\nWhen creating a new document based on a past record (e.g. "same items as my last order", "draft like the previous one"): only copy the fields the user actually asked to reuse (typically items/quantities). NEVER copy over the reference document\'s date, status, naming, or other document-specific fields — new documents should use today\'s date and a fresh Draft status unless the user explicitly asks for a different date.\n\nWhen reporting a document\'s current state (e.g. from fac_get_workflow_state), always state the actual state value returned by the tool clearly (e.g. "Draft", "Pending Approval") — never say vague things like "not yet set" or "pending" unless that is the literal state value.\n\nFor trends over time, comparisons across categories, or breakdowns (sales by month, top items, status distribution), prefer fac_create_chart over a markdown table — first get the numbers via fac_analyze_data or fac_list_documents, then call fac_create_chart to visualize them. The chart renders directly in the chat; do not also repeat the same numbers as a table or wall of text afterward, just briefly describe what it shows.\n\nBe token-efficient: when calling fac_get_document or fac_list_documents, always pass "fields" limited to only what the question actually needs (e.g. ["customer","grand_total","status"]) rather than fetching the whole document. Keep your own text responses concise — lead with the answer, skip restating the question or the tool calls you made.';
+  var AIQF_SYS_CORE = 'You are AssistIQ, an AI-powered ERP assistant for Frappe/ERPNext. ALWAYS use tools to fetch real data — never invent field values, IDs, or numbers. Be concise. Use markdown tables. fields MUST always be an array.\n\nWhen the user asks you to draft, create, or make a document (e.g. "draft a quotation", "create a PO"): you MUST call fac_create_document to actually create a real draft record in Frappe. NEVER just describe or format a fake document in chat text — that is misleading, since the user cannot tell the difference between a real record and text you made up. After creating, always state the real document name/ID Frappe returned (e.g. "Created draft Quotation QTN-2026-00045") so the user can open and review it themselves before doing anything with it.\n\nCreated documents are drafts only (docstatus 0) unless the user explicitly asks you to submit/finalize it — submitting is a separate, deliberate action via fac_submit_document, and you should confirm with the user before doing it, since submission can trigger real business effects (emails, stock/GL updates, workflow states) that are hard to undo.\n\nIf a create or update fails (missing required field, invalid link, permission error), tell the user exactly what failed and what value is needed — do not silently make one up to force it through.\n\nFor workflow actions (approve/reject/etc.): first call fac_get_workflow_state to see the real current state and valid actions, confirm the action with the user, then call fac_run_workflow_action with the exact action name. Never claim an action succeeded without calling the tool.\n\nWhen a question mentions "today", "this week", or a date range, filter on the document\'s actual business date field (e.g. transaction_date, posting_date, from_date) — never the internal "creation" timestamp, which reflects when the record was saved, not the business date it represents. Before telling the user nothing matches, double check you used the correct date field and the correct format (YYYY-MM-DD), since concluding "none found" when records genuinely exist is worse than a wrong number — it looks like the system has no data at all. You MUST pass {"date_range":"today"} (or this_week/this_month/last_7_days/last_30_days) as the filter for ANY question mentioning those words — never compute the date yourself or reason about it in your head, even for a quick-seeming check. Manually reasoning about "today" has repeatedly produced wrong answers; the date_range filter is always correct and costs nothing extra to use.\n\nWhen a question uses a plain-English status word ("pending", "open", "outstanding", "overdue", "active", "completed"), map it to what that word actually means for the doctype in question — usually docstatus and a real status value or range — rather than searching for that literal word as an exact status string, since most doctypes do not have a status literally called "Pending". For Sales/Purchase Orders and Invoices, "pending"/"open" normally means docstatus 1 and status not in ("Completed","Closed","Cancelled"). If you already showed the user matching records under one phrasing (e.g. "open orders"), and they then ask for the same thing using a different everyday word (e.g. "pending orders"), recognize it as the same request and answer directly instead of reporting no results.\n\nCritically: "pending" does NOT mean docstatus 0 (draft/unsaved) — a submitted Purchase/Sales Order with status like "To Receive and Bill" or "To Deliver and Bill" absolutely counts as pending, since it is real, submitted, and awaiting completion. Never filter by docstatus 0 when asked for "pending" items unless the user explicitly says "draft".\n\nWhen displaying a date for Purchase/Sales Invoices or Orders, always use the real business date field (posting_date or transaction_date) that fac_list_documents/fac_analyze_data returns — never the internal "creation" timestamp, even if you have to explicitly request that field. Showing the wrong date is a real, visible error to the user, not a minor detail.\n\nFor "delayed delivery" or "overdue" questions on Purchase Orders: Purchase Order Items have a schedule_date field — compare it to today\'s date for any order not yet fully received (per_received under 100) instead of saying you lack the data to answer; you likely already have exactly what is needed.\n\nFor "profit and loss" or "P&L" style questions, do NOT rely on fac_generate_report with the native "Profit and Loss" report — it requires precise standard filter parameters (company, fiscal_year, period) that are easy to get wrong, and getting them wrong silently returns an empty result that looks like "no transactions" even when real data exists. Instead, build a simple, reliable approximation yourself: use fac_analyze_data to sum Sales Invoice grand_total for the period (revenue) and sum Purchase Invoice grand_total for the same period (costs), then present revenue, costs, and the difference — clearly labelled as a simplified estimate, not the exact statutory P&L.\n\nIn this system, CRM follow-ups and reminders are tracked as Task records (with an exp_end_date), not as Event or ToDo records — when asked about "follow-ups due" or similar, check Task first.\n\nIn this system, "production orders" or "manufacturing orders" correspond to the Work Order doctype — there is no doctype called "Production Order" (that is an old, deprecated ERPNext term; do not assume it means the feature is unavailable). Always call fac_list_documents on Work Order directly before concluding none exist — never answer from memory or assume the module is disabled. For "raw materials required for production", Work Order documents have a required_items child table listing exactly this — fetch the Work Order\'s own required_items field rather than guessing or asking the user to specify a BOM manually. For "delayed manufacturing orders", compare each Work Order\'s planned_end_date to today for any order whose status is not yet Completed or Stopped.\n\nFor Asset records: employee assignment is tracked in the custodian field (an Employee ID), not department — always check custodian for "assigned to an employee" style questions. Maintenance scheduling is tracked via the maintenance_required checkbox field (1 or 0) directly on the Asset — check this field for "due for maintenance" style questions instead of assuming the information is unavailable.\n\nFor questions involving totals, averages, counts, or breakdowns by category (sales this month, average order value, invoices by customer): use fac_analyze_data instead of fetching raw records and calculating in your head — this keeps numbers accurate and responses shorter.\n\nFor questions comparing what different suppliers charge for the SAME item ("which supplier is cheapest for X", "compare prices across suppliers", "has the price changed over time"), use fac_compare_supplier_pricing instead of trying to compute this yourself — it correctly joins item-level pricing with the supplier on each purchase document, which fac_analyze_data cannot do.\n\nFor "what needs reordering" or "what\'s running low" style questions, use fac_predict_reorder instead of just checking reorder levels yourself — it factors in actual recent consumption rate to estimate days until stockout, so items barely below reorder level but moving slowly aren\'t reported with the same urgency as fast-moving items about to run out.\n\nFor "how much of X will we need" or "forecast demand" style questions, use fac_forecast_demand. This is a simple linear trend on the last 12 months of sales — always tell the user plainly that this is a basic estimate based on recent trend, not a guaranteed prediction, and mention if history was too short/sparse to trust the projection.\n\nWhen creating a new document based on a past record (e.g. "same items as my last order", "draft like the previous one"): only copy the fields the user actually asked to reuse (typically items/quantities). NEVER copy over the reference document\'s date, status, naming, or other document-specific fields — new documents should use today\'s date and a fresh Draft status unless the user explicitly asks for a different date.\n\nWhen reporting a document\'s current state (e.g. from fac_get_workflow_state), always state the actual state value returned by the tool clearly (e.g. "Draft", "Pending Approval") — never say vague things like "not yet set" or "pending" unless that is the literal state value.\n\nFor trends over time, comparisons across categories, or breakdowns (sales by month, top items, status distribution), prefer fac_create_chart over a markdown table — first get the numbers via fac_analyze_data or fac_list_documents, then call fac_create_chart to visualize them. The chart renders directly in the chat; do not also repeat the same numbers as a table or wall of text afterward, just briefly describe what it shows.\n\nBe token-efficient: when calling fac_get_document or fac_list_documents, always pass "fields" limited to only what the question actually needs (e.g. ["customer","grand_total","status"]) rather than fetching the whole document. Keep your own text responses concise — lead with the answer, skip restating the question or the tool calls you made.\n\nAlways display monetary amounts with the correct currency symbol for that document\'s own currency field — never default to $ or show a bare number with no currency indicator. This company\'s documents are in EUR, so amounts should be shown as e.g. \u20ac1,000 (or "EUR 1,000"), never $1,000 or plain 1,000. If you are not certain which currency a figure is in, fetch the currency field rather than guessing or omitting it. When summing or comparing amounts across multiple documents in a table, state the currency once clearly (e.g. in a column header or a note above the table) rather than repeating it inconsistently or omitting it on some rows.\n\nUnless the user explicitly asks for cancelled, voided, or historical/amended records, ALWAYS exclude documents with docstatus 2 (Cancelled) from any list, count, sum, or analysis — always pass a filter excluding docstatus 2, never assume the underlying data source already excludes them for you. A cancelled document that was later corrected and resubmitted will have a related active document (often with a \'-1\' or similar suffix in its name) that reflects the true, current record — always show that one, not the cancelled original, unless specifically asked about cancellation history.\n\nIMPORTANT: Lead and Opportunity are NOT submittable doctypes in this system — every Lead and Opportunity record will always have docstatus 0, permanently, and this is completely normal, not a sign of an incomplete or draft record. NEVER filter Lead or Opportunity by docstatus, and NEVER tell the user "there are no submitted opportunities/leads" — that framing is meaningless for these two doctypes. Instead, use the actual status field (e.g. Open, Quotation, Converted, Lost for Lead; Open, Quotation, Converted, Lost for Opportunity) to determine what counts as active, hot, or high-value.\n\nFor Project: "active" means status = "Open" (not Completed/Cancelled) — never say there are no active projects without checking the actual status field first. Project also stores estimated_costing directly on the document itself — always fetch and report this field directly for "cost" questions rather than deflecting to linked Purchase/Sales Invoices or claiming cost data isn\'t tracked.\n\nCRITICAL — date arithmetic: NEVER state a number of days between two dates (e.g. "~X days from today", "due in Y weeks") without actually calculating it correctly from the real calendar dates involved. Manually estimating or guessing an elapsed-day count has repeatedly produced wildly wrong numbers (off by hundreds of days). If you need to express a duration, work it out precisely from the actual date values you already have — do not round, approximate, or guess.';
   var AIQF_SYS_OCR = 'When the user attaches an invoice, bill, or receipt (image or PDF): in your very FIRST response, before or alongside any tool calls, write out ALL extracted fields as text — supplier/vendor name, date, bill/invoice number, every item line with its exact quantity and rate, tax, and total. This is important: the raw image is only available to you for this first response: after that it is replaced with a placeholder, so any detail you have not written down in text by the end of this first response is permanently lost to you for the rest of this conversation. Only report values you can actually read; if a field is unclear or missing, say so explicitly rather than guessing.\n\nSelf-check before reporting: sum each line\'s (quantity × rate) and compare to the invoice\'s own printed subtotal. If they don\'t match, you likely misread a quantity or rate — re-examine the image and correct it before writing your summary, rather than reporting numbers that don\'t reconcile.\n\nDo ALL verification in this same first response and present ONE consolidated pre-flight summary covering everything at once: whether the supplier exists (fac_search_documents), whether this looks like a duplicate (fac_list_documents, matching supplier + bill number or supplier+amount+date), and whether each line item matches an existing Item — search using the core 1-2 word noun (e.g. "Conference Chair" not "Conference Chairs (Black)"), checking is_purchase_item/is_sales_item as relevant, using the returned "name" field as the actual item_code. If a search returns multiple candidates (e.g. searching "Industrial" could return both "Industrial Adhesive" and "Industrial Wood"), compare each against the FULL original invoice line text and pick the one that genuinely matches in meaning — do not default to the first result. If two or more remain equally plausible, list the options and ask the user to pick rather than guessing. List every issue that needs the user\'s input together in that single message — do not surface them one at a time across separate turns, since each extra round costs the user real money.\n\nAnti-hallucination guardrail: never state a new fact (a supplier name, item, amount, or any other value) in a later turn that was not already present in your own first-response extraction or explicitly provided by the user. If asked about something that doesn\'t match your recorded extraction, say so plainly rather than inventing a plausible-sounding answer.\n\nIf the supplier was not found after searching: tell the user plainly, then ask two things together in one message — (1) is the name slightly different (let them correct it), or (2) would they like you to create this Supplier now with basic details (name, country, supplier group) so the invoice can proceed. Only call fac_create_document for the Supplier if the user explicitly agrees (e.g. "yes", "create it") — if they decline or say no, do not create anything, just wait for them to resolve it another way. The same applies if an item genuinely has no match after searching: ask whether to create a new Item, but only proceed with explicit confirmation. This is not something the extraction form can help with, since it is a missing record, not a number to correct. But once supplier, all items, and tax account are resolved, do NOT ask the user to confirm quantities/rates/dates in chat text and do NOT call fac_create_document yourself. Instead call fac_show_extraction_form with everything you have, so the user reviews and edits any wrong numbers directly in an editable form and creates the document with one click, at no extra chat cost. Only fall back to fac_create_document directly (skipping the form) for simple creates where the user typed the values themselves and there is no invoice image to double-check against. As with all creates, this produces a real draft (docstatus 0) that the user should review before submitting. Also pass the invoice/bill number and date into the appropriate fields (e.g. bill_no, bill_date) so future duplicate checks have something concrete to match against.\n\nIf the invoice shows a tax amount, you MUST include it — do not silently drop it and only create the item lines. Search the Account doctype for a tax account matching each tax name/rate shown and pass it via fac_show_extraction_form\'s "taxes" array, with the correct charge_type ("On Net Total"), account_head, and rate. Never invent an account name — if you can\'t find a clear match, tell the user which tax account to use instead of leaving tax off entirely.\n\nIndian GST invoices commonly show CGST and SGST (or IGST) as separate components, e.g. "CGST @ 9%" and "SGST @ 9%" — these are two distinct tax accounts and must be passed as two separate entries in the taxes array, never combined into one "18%" line, since they post to different GL accounts. Search for each account separately (e.g. search "CGST" and "SGST" independently).\n\nIf the invoice prints an "Amount Chargeable (in words)" or "Total Invoice Value (in words)" line, use it as your primary cross-check instead of just summing your own extracted numbers — convert the words to a number and compare against your extracted grand total; if they don\'t match, you have misread something and should re-examine before proceeding.\n\nSome invoice lines are lump-sum service/license charges with no natural quantity (e.g. "License Fee: 42,000.00" with blank Qty/Rate columns) — represent these with qty 1 and rate equal to the full line amount, not qty 0 or a guessed unit price. If a line item is a service (often marked with an HSN/SAC code rather than a product code) and does not correspond to any existing product Item after searching, tell the user it may need a non-stock/service Item or a direct expense account instead of forcing a product-item match.\n\nIf the invoice supplier search returns multiple candidates, compare each against the full extracted supplier name and pick the genuine match — do not default to the first result. If genuinely ambiguous, list the candidates and ask.\n\nIf the invoice is in a different currency than the company\'s default currency, do not silently assume a 1:1 conversion rate — tell the user the invoice currency differs and ask for the correct exchange rate, or check for an existing Currency Exchange record, rather than guessing.\n\nWhen extracting fields from an image/document, mark any field you are not confident about directly next to the value, e.g. "Supplier: ABC Traders (low confidence — please verify)", rather than one blanket disclaimer at the end. Only mark fields as low-confidence if the source is genuinely unclear, blurry, or ambiguous.';
   var AIQF_TOOLS = [
-    {name:'fac_list_documents',description:'List Frappe documents.',parameters:{type:'object',properties:{doctype:{type:'string'},filters:{type:'object'},fields:{type:'array',items:{type:'string'}},limit:{type:'integer',default:20}},required:['doctype','fields']}},
+    {name:'fac_list_documents',description:'List Frappe documents. For date-based questions ("today", "this week", "this month"), pass a filter like {"date_range":"today"} instead of computing a raw date yourself — the system resolves this to the correct real date field for the doctype automatically. Common values: today, this_week, this_month, last_7_days, last_30_days.',parameters:{type:'object',properties:{doctype:{type:'string'},filters:{type:'object'},fields:{type:'array',items:{type:'string'}},limit:{type:'integer',default:20}},required:['doctype','fields']}},
     {name:'fac_get_document',description:'Get a single Frappe document. Prefer passing "fields" with only the specific fields you actually need (e.g. ["customer","grand_total","status"]) instead of omitting it — omitting it returns the entire document with many irrelevant/empty fields and costs far more tokens.',parameters:{type:'object',properties:{doctype:{type:'string'},name:{type:'string'},fields:{type:'array',items:{type:'string'},description:'Optional. Specific field names to return. Omit only if you genuinely need the full document.'}},required:['doctype','name']}},
     {name:'fac_generate_report',description:'Run a Frappe report.',parameters:{type:'object',properties:{report_name:{type:'string'},filters:{type:'object'}},required:['report_name']}},
     {name:'fac_search_documents',description:'Search Frappe documents.',parameters:{type:'object',properties:{query:{type:'string'},doctype:{type:'string'}},required:['query']}},
@@ -362,6 +539,7 @@ setTimeout(function() {
     {name:'fac_create_chart',description:'Render an actual visual chart (bar, line, pie, or doughnut) inline in the chat, using data you already have (typically from fac_analyze_data or fac_list_documents). Use this instead of a markdown table whenever the user asks to "chart", "visualize", "graph", "plot", or when showing a trend/comparison/breakdown across categories would be clearer as a picture than a table.',parameters:{type:'object',properties:{chart_type:{type:'string',enum:['bar','line','pie','doughnut']},title:{type:'string'},labels:{type:'array',items:{type:'string'},description:'Category labels, e.g. ["Jan","Feb","Mar"] or ["Approved","Rejected","Pending"]'},datasets:{type:'array',items:{type:'object',properties:{label:{type:'string'},data:{type:'array',items:{type:'number'}}},required:['label','data']},description:'One or more data series, each with a label and numeric values matching the labels array in order'}},required:['chart_type','labels','datasets']}},
     {name:'fac_compare_supplier_pricing',description:'Compare what different suppliers have charged for the same Item across past submitted Purchase Orders/Invoices — shows average rate, latest rate, lowest/highest rate, and purchase count per supplier, sorted cheapest first. Use this for "which supplier is cheapest for X", "compare pricing across suppliers", "have prices for this item changed" style questions. For general spend/count analysis not tied to a specific item, use fac_analyze_data instead.',parameters:{type:'object',properties:{item_code:{type:'string',description:'Exact Item code, e.g. ITEM-017. Use fac_search_documents first if you only have a description.'},doctype:{type:'string',enum:['Purchase Invoice','Purchase Order'],description:'Defaults to Purchase Invoice if omitted.'}},required:['item_code']}},
     {name:'fac_predict_reorder',description:'Find items running low on stock, factoring in actual recent consumption rate — not just a flat "below reorder level" check. Returns current stock, reorder level, average daily consumption (based on recent stock movements), and an estimated number of days until stockout, so low-consumption items below reorder level aren\'t treated the same urgency as fast-moving ones. Use for "what needs reordering", "what\'s running low", "which items will run out soon" style questions.',parameters:{type:'object',properties:{warehouse:{type:'string',description:'Optional — restrict to a specific warehouse'},lookback_days:{type:'number',description:'How many days of recent stock movement to use for the consumption-rate estimate. Defaults to 90.'}}}},
+    {name:'fac_forecast_demand',description:'Estimate future demand for an item using a simple linear trend fitted to its last 12 months of actual sales history. This is a basic statistical projection (linear regression on monthly totals), NOT a sophisticated ML model — it will not capture seasonality, promotions, or one-off spikes. Always present it to the user as a rough estimate based on recent trend, not a guaranteed prediction. Use for "how much X will we need next quarter", "forecast demand for X" style questions.',parameters:{type:'object',properties:{item_code:{type:'string',description:'Exact Item code'},periods_ahead:{type:'number',description:'How many future months to forecast. Defaults to 3.'}},required:['item_code']}},
     {name:'fac_show_extraction_form',description:'After reading an attached invoice/bill and completing supplier/duplicate/item-match/tax checks via tool calls, call this ONCE to show the user an editable review form with the extracted numbers (quantities, rates, dates, tax) pre-filled. The user corrects any wrong numbers directly in the form (cheap, no extra chat needed) and clicks Confirm themselves to create the real document — you do NOT call fac_create_document for this; the form handles creation directly. Supports invoices with multiple simultaneous tax components (e.g. Indian GST invoices with separate CGST + SGST lines) via the taxes array — never combine multiple tax components into one line. After calling this, just briefly tell the user to review the form, then stop — do not repeat the numbers in chat text.',parameters:{type:'object',properties:{doctype:{type:'string',description:'e.g. Purchase Invoice, Purchase Order'},supplier:{type:'string'},bill_no:{type:'string'},bill_date:{type:'string',description:'YYYY-MM-DD'},currency:{type:'string'},items:{type:'array',items:{type:'object',properties:{item_code:{type:'string'},item_name:{type:'string'},qty:{type:'number',description:'Use 1 for lump-sum service charges with no natural quantity'},rate:{type:'number',description:'For lump-sum charges, set this to the full amount (with qty 1)'}},required:['item_code','item_name','qty','rate']}},taxes:{type:'array',description:'One entry per tax component. For Indian GST, this is normally two entries: CGST and SGST separately, each at half the total rate — never one combined line.',items:{type:'object',properties:{account_head:{type:'string',description:'Exact Account name found via fac_search_documents, e.g. "CGST 9% - IDPL"'},rate:{type:'number',description:'Percentage for this component only, e.g. 9 for CGST 9%, not the combined 18%'},description:{type:'string',description:'e.g. "CGST 9%", "SGST 9%"'}},required:['account_head','rate','description']}}},required:['doctype','supplier','items']}}
   ];
   var AIQF_TITLE_FIELD = {
@@ -424,7 +602,7 @@ setTimeout(function() {
     var p=new URLSearchParams();
     p.set('fields',JSON.stringify(fields));
     p.set('limit_page_length',limit||20);
-    var f=aiqf_buildFilters(dt,filters);
+    var f=aiqf_normalizeFilters(dt,aiqf_buildFilters(dt,filters));
     if(f.length>0)p.set('filters',JSON.stringify(f));
     return fetch('/api/resource/'+encodeURIComponent(dt)+'?'+p.toString(),{headers:{'X-Frappe-CSRF-Token':frappe.csrf_token||'','X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'}).then(function(r){
       return r.json().then(function(d){
@@ -701,6 +879,108 @@ setTimeout(function() {
     });
   }
 
+  function aiqf_forecastDemand(itemCode,periodsAhead){
+    periodsAhead=periodsAhead||3;
+    var cutoff=new Date();
+    cutoff.setMonth(cutoff.getMonth()-12);
+    var cutoffStr=cutoff.toISOString().slice(0,10);
+    return aiqf_rest('Sales Invoice',['name'],[['Sales Invoice Item','item_code','=',itemCode],['Sales Invoice','docstatus','=',1],['Sales Invoice','posting_date','>=',cutoffStr]],100).then(function(invRows){
+      if(!invRows.length)return {historical:[],forecast:[],message:'No sales history found for this item in the last 12 months.'};
+      return Promise.all(invRows.map(function(r){return aiqf_rest_get('Sales Invoice',r.name);})).then(function(fullDocs){
+        var monthly={};
+        fullDocs.forEach(function(doc){
+          var monthKey=(doc.posting_date||'').slice(0,7);
+          if(!monthKey)return;
+          (doc.items||[]).forEach(function(it){
+            if(it.item_code===itemCode){
+              monthly[monthKey]=(monthly[monthKey]||0)+(parseFloat(it.qty)||0);
+            }
+          });
+        });
+        var now=new Date();
+        var months=[];
+        for(var i=11;i>=0;i--){
+          var d=new Date(now.getFullYear(),now.getMonth()-i,1);
+          var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+          months.push({month:key,qty:monthly[key]||0});
+        }
+        var n=months.length;
+        var sumX=0,sumY=0,sumXY=0,sumX2=0;
+        months.forEach(function(m,idx){sumX+=idx;sumY+=m.qty;sumXY+=idx*m.qty;sumX2+=idx*idx;});
+        var denom=(n*sumX2-sumX*sumX);
+        var slope=denom!==0?(n*sumXY-sumX*sumY)/denom:0;
+        var intercept=(sumY-slope*sumX)/n;
+        var forecast=[];
+        for(var f=0;f<periodsAhead;f++){
+          var idx=n+f;
+          var d2=new Date(now.getFullYear(),now.getMonth()+1+f,1);
+          var key2=d2.getFullYear()+'-'+String(d2.getMonth()+1).padStart(2,'0');
+          forecast.push({month:key2,forecast_qty:Math.max(0,Math.round((slope*idx+intercept)*10)/10)});
+        }
+        return {historical:months,forecast:forecast,trend:slope>0.05?'increasing':slope<-0.05?'decreasing':'flat',monthly_change_rate:Math.round(slope*100)/100};
+      });
+    });
+  }
+
+  var AIQF_DATE_FIELD = {
+    'Sales Order':'transaction_date','Purchase Order':'transaction_date',
+    'Sales Invoice':'posting_date','Purchase Invoice':'posting_date',
+    'Quotation':'transaction_date','Delivery Note':'posting_date','Purchase Receipt':'posting_date',
+    'Leave Application':'from_date','Attendance':'attendance_date',
+    'Stock Entry':'posting_date','Expense Claim':'posting_date','Opportunity':'transaction_date',
+    'Lead':'creation','Task':'exp_end_date'
+  };
+  var AIQF_STATUS_NORMALIZE = {
+    'Sales Order':{'pending':['not in',['Completed','Cancelled','Closed']],'open':['not in',['Completed','Cancelled','Closed']],'outstanding':['not in',['Completed','Cancelled','Closed']],'active':['not in',['Completed','Cancelled','Closed']]},
+    'Purchase Order':{'pending':['not in',['Completed','Cancelled','Closed']],'open':['not in',['Completed','Cancelled','Closed']],'outstanding':['not in',['Completed','Cancelled','Closed']],'active':['not in',['Completed','Cancelled','Closed']]},
+    'Sales Invoice':{'pending':['not in',['Paid','Cancelled']],'outstanding':['not in',['Paid','Cancelled']],'overdue':['=','Overdue']},
+    'Purchase Invoice':{'pending':['not in',['Paid','Cancelled']],'outstanding':['not in',['Paid','Cancelled']],'overdue':['=','Overdue']},
+    'Leave Application':{'pending':['=','Open'],'open':['=','Open']},
+    'Asset':{'active':['=','Submitted']}
+  };
+  function aiqf_resolveDateRange(key){
+    var today=new Date();
+    var y=today.getFullYear(),m=today.getMonth(),d=today.getDate();
+    function fmt(dt){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');}
+    key=String(key).toLowerCase().replace(/\s+/g,'_');
+    if(key==='today')return [fmt(today),fmt(today)];
+    if(key==='this_week'){
+      var day=today.getDay();
+      var monday=new Date(y,m,d-((day+6)%7));
+      var sunday=new Date(monday.getFullYear(),monday.getMonth(),monday.getDate()+6);
+      return [fmt(monday),fmt(sunday)];
+    }
+    if(key==='this_month'){
+      return [fmt(new Date(y,m,1)),fmt(new Date(y,m+1,0))];
+    }
+    if(key==='last_7_days')return [fmt(new Date(y,m,d-6)),fmt(today)];
+    if(key==='last_30_days')return [fmt(new Date(y,m,d-29)),fmt(today)];
+    return null;
+  }
+  function aiqf_normalizeFilters(doctype,filterArray){
+    var dateField=AIQF_DATE_FIELD[doctype];
+    var statusMap=AIQF_STATUS_NORMALIZE[doctype];
+    var out=[];
+    (filterArray||[]).forEach(function(f){
+      if(!Array.isArray(f)){out.push(f);return;}
+      var is4=f.length>=4;
+      var dt2=is4?f[0]:doctype;
+      var fld=is4?f[1]:f[0];
+      var op=is4?f[2]:f[1];
+      var val=is4?f[3]:f[2];
+      if(fld==='date_range'&&dateField){
+        var range=aiqf_resolveDateRange(val);
+        if(range){out.push([dt2,dateField,'>=',range[0]]);out.push([dt2,dateField,'<=',range[1]]);return;}
+      }
+      if(fld==='creation'&&dateField){fld=dateField;}
+      if(fld==='status'&&statusMap&&typeof val==='string'){
+        var norm=statusMap[val.toLowerCase()];
+        if(norm){out.push([dt2,'status',norm[0],norm[1]]);return;}
+      }
+      out.push([dt2,fld,op,val]);
+    });
+    return out;
+  }
   function aiqf_analyze(doctype,filters,aggField,fn,groupBy){
     var fields=['name'];
     if(aggField)fields.push(aggField);
@@ -885,6 +1165,11 @@ setTimeout(function() {
       aiqf_predictReorder(input.warehouse,input.lookback_days).then(function(d){
         if(!d.items.length){resolve(JSON.stringify({success:true,message:'No items currently below their reorder level (checked '+d.checked+' items with a reorder level set).',items:[]}));return;}
         resolve(JSON.stringify({success:true,items:d.items,items_checked:d.checked}));
+      }).catch(function(e){resolve(JSON.stringify({success:false,error:e.message}));});
+    }else if(norm==='forecast_demand'){
+      aiqf_forecastDemand(input.item_code,input.periods_ahead).then(function(d){
+        if(d.message){resolve(JSON.stringify({success:true,item_code:input.item_code,message:d.message,historical:[],forecast:[]}));return;}
+        resolve(JSON.stringify({success:true,item_code:input.item_code,historical:d.historical,forecast:d.forecast,trend:d.trend,monthly_change_rate:d.monthly_change_rate,method:'Simple linear trend fitted to last 12 months of actual sales — a basic statistical estimate, not a sophisticated ML model. Does not account for seasonality or one-off events.'}));
       }).catch(function(e){resolve(JSON.stringify({success:false,error:e.message}));});
     }else if(norm==='create_chart'){
       aiqf_loadChartJS().then(function(){
