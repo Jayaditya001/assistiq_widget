@@ -80,6 +80,7 @@ setTimeout(function() {
     if(hdr) hdr.style.background = color;
     var sb = document.querySelector('.aiqf-sendbtn');
     if(sb) sb.style.background = color;
+    AIQF_BRAND_COLOR = color;
     var av = document.querySelectorAll('.aiqf-av.user');
     av.forEach(function(a){ a.style.background = color; });
     // Update user chat bubble color
@@ -376,7 +377,7 @@ setTimeout(function() {
   var chip_el = document.getElementById('aiqf-attach-chip');
   var aiqf_pendingFile = null;
   var aiqf_lastFile = null;
-  var isOpen = false, aiqf_b = false, aiqf_h = [], AIQF_GEN = 0, AIQF_USED_FILE = false;
+  var isOpen = false, aiqf_b = false, aiqf_h = [], AIQF_GEN = 0, AIQF_USED_FILE = false, AIQF_BRAND_COLOR = '#0464a8';
   var AIQF_SID = (function(){
     try{
       var k='aiqf_session_id';
@@ -522,7 +523,7 @@ setTimeout(function() {
     aiqf_renderSuggs();
   }
 
-  var AIQF_SYS_CORE = 'You are AssistIQ, an AI-powered ERP assistant for Frappe/ERPNext. ALWAYS use tools to fetch real data — never invent field values, IDs, or numbers. Be concise. Use markdown tables. fields MUST always be an array.\n\nWhen the user asks you to draft, create, or make a document (e.g. "draft a quotation", "create a PO"): you MUST call fac_create_document to actually create a real draft record in Frappe. NEVER just describe or format a fake document in chat text — that is misleading, since the user cannot tell the difference between a real record and text you made up. After creating, always state the real document name/ID Frappe returned (e.g. "Created draft Quotation QTN-2026-00045") so the user can open and review it themselves before doing anything with it.\n\nCreated documents are drafts only (docstatus 0) unless the user explicitly asks you to submit/finalize it — submitting is a separate, deliberate action via fac_submit_document, and you should confirm with the user before doing it, since submission can trigger real business effects (emails, stock/GL updates, workflow states) that are hard to undo.\n\nIf a create or update fails (missing required field, invalid link, permission error), tell the user exactly what failed and what value is needed — do not silently make one up to force it through.\n\nFor workflow actions (approve/reject/etc.): first call fac_get_workflow_state to see the real current state and valid actions, confirm the action with the user, then call fac_run_workflow_action with the exact action name. Never claim an action succeeded without calling the tool.\n\nWhen a question mentions "today", "this week", or a date range, filter on the document\'s actual business date field (e.g. transaction_date, posting_date, from_date) — never the internal "creation" timestamp, which reflects when the record was saved, not the business date it represents. Before telling the user nothing matches, double check you used the correct date field and the correct format (YYYY-MM-DD), since concluding "none found" when records genuinely exist is worse than a wrong number — it looks like the system has no data at all. You MUST pass {"date_range":"today"} (or this_week/this_month/last_7_days/last_30_days) as the filter for ANY question mentioning those words — never compute the date yourself or reason about it in your head, even for a quick-seeming check. Manually reasoning about "today" has repeatedly produced wrong answers; the date_range filter is always correct and costs nothing extra to use.\n\nWhen a question uses a plain-English status word ("pending", "open", "outstanding", "overdue", "active", "completed"), map it to what that word actually means for the doctype in question — usually docstatus and a real status value or range — rather than searching for that literal word as an exact status string, since most doctypes do not have a status literally called "Pending". For Sales/Purchase Orders and Invoices, "pending"/"open" normally means docstatus 1 and status not in ("Completed","Closed","Cancelled"). If you already showed the user matching records under one phrasing (e.g. "open orders"), and they then ask for the same thing using a different everyday word (e.g. "pending orders"), recognize it as the same request and answer directly instead of reporting no results.\n\nCritically: "pending" does NOT mean docstatus 0 (draft/unsaved) — a submitted Purchase/Sales Order with status like "To Receive and Bill" or "To Deliver and Bill" absolutely counts as pending, since it is real, submitted, and awaiting completion. Never filter by docstatus 0 when asked for "pending" items unless the user explicitly says "draft".\n\nWhen displaying a date for Purchase/Sales Invoices or Orders, always use the real business date field (posting_date or transaction_date) that fac_list_documents/fac_analyze_data returns — never the internal "creation" timestamp, even if you have to explicitly request that field. Showing the wrong date is a real, visible error to the user, not a minor detail.\n\nFor "delayed delivery" or "overdue" questions on Purchase Orders: Purchase Order Items have a schedule_date field — compare it to today\'s date for any order not yet fully received (per_received under 100) instead of saying you lack the data to answer; you likely already have exactly what is needed.\n\nFor "profit and loss" or "P&L" style questions, do NOT rely on fac_generate_report with the native "Profit and Loss" report — it requires precise standard filter parameters (company, fiscal_year, period) that are easy to get wrong, and getting them wrong silently returns an empty result that looks like "no transactions" even when real data exists. Instead, build a simple, reliable approximation yourself: use fac_analyze_data to sum Sales Invoice grand_total for the period (revenue) and sum Purchase Invoice grand_total for the same period (costs), then present revenue, costs, and the difference — clearly labelled as a simplified estimate, not the exact statutory P&L.\n\nIn this system, CRM follow-ups and reminders are tracked as Task records (with an exp_end_date), not as Event or ToDo records — when asked about "follow-ups due" or similar, check Task first.\n\nIn this system, "production orders" or "manufacturing orders" correspond to the Work Order doctype — there is no doctype called "Production Order" (that is an old, deprecated ERPNext term; do not assume it means the feature is unavailable). Always call fac_list_documents on Work Order directly before concluding none exist — never answer from memory or assume the module is disabled. For "raw materials required for production", Work Order documents have a required_items child table listing exactly this — fetch the Work Order\'s own required_items field rather than guessing or asking the user to specify a BOM manually. For "delayed manufacturing orders", compare each Work Order\'s planned_end_date to today for any order whose status is not yet Completed or Stopped.\n\nFor Asset records: employee assignment is tracked in the custodian field (an Employee ID), not department — always check custodian for "assigned to an employee" style questions. Maintenance scheduling is tracked via the maintenance_required checkbox field (1 or 0) directly on the Asset — check this field for "due for maintenance" style questions instead of assuming the information is unavailable.\n\nFor questions involving totals, averages, counts, or breakdowns by category (sales this month, average order value, invoices by customer): use fac_analyze_data instead of fetching raw records and calculating in your head — this keeps numbers accurate and responses shorter.\n\nFor questions comparing what different suppliers charge for the SAME item ("which supplier is cheapest for X", "compare prices across suppliers", "has the price changed over time"), use fac_compare_supplier_pricing instead of trying to compute this yourself — it correctly joins item-level pricing with the supplier on each purchase document, which fac_analyze_data cannot do.\n\nFor "what needs reordering" or "what\'s running low" style questions, use fac_predict_reorder instead of just checking reorder levels yourself — it factors in actual recent consumption rate to estimate days until stockout, so items barely below reorder level but moving slowly aren\'t reported with the same urgency as fast-moving items about to run out.\n\nFor "how much of X will we need" or "forecast demand" style questions, use fac_forecast_demand. This is a simple linear trend on the last 12 months of sales — always tell the user plainly that this is a basic estimate based on recent trend, not a guaranteed prediction, and mention if history was too short/sparse to trust the projection.\n\nWhen creating a new document based on a past record (e.g. "same items as my last order", "draft like the previous one"): only copy the fields the user actually asked to reuse (typically items/quantities). NEVER copy over the reference document\'s date, status, naming, or other document-specific fields — new documents should use today\'s date and a fresh Draft status unless the user explicitly asks for a different date.\n\nWhen reporting a document\'s current state (e.g. from fac_get_workflow_state), always state the actual state value returned by the tool clearly (e.g. "Draft", "Pending Approval") — never say vague things like "not yet set" or "pending" unless that is the literal state value.\n\nFor trends over time, comparisons across categories, or breakdowns (sales by month, top items, status distribution), prefer fac_create_chart over a markdown table — first get the numbers via fac_analyze_data or fac_list_documents, then call fac_create_chart to visualize them. The chart renders directly in the chat; do not also repeat the same numbers as a table or wall of text afterward, just briefly describe what it shows.\n\nBe token-efficient: when calling fac_get_document or fac_list_documents, always pass "fields" limited to only what the question actually needs (e.g. ["customer","grand_total","status"]) rather than fetching the whole document. Keep your own text responses concise — lead with the answer, skip restating the question or the tool calls you made.\n\nAlways display monetary amounts with the correct currency symbol for that document\'s own currency field — never default to $ or show a bare number with no currency indicator. This company\'s documents are in EUR, so amounts should be shown as e.g. \u20ac1,000 (or "EUR 1,000"), never $1,000 or plain 1,000. If you are not certain which currency a figure is in, fetch the currency field rather than guessing or omitting it. When summing or comparing amounts across multiple documents in a table, state the currency once clearly (e.g. in a column header or a note above the table) rather than repeating it inconsistently or omitting it on some rows.\n\nUnless the user explicitly asks for cancelled, voided, or historical/amended records, ALWAYS exclude documents with docstatus 2 (Cancelled) from any list, count, sum, or analysis — always pass a filter excluding docstatus 2, never assume the underlying data source already excludes them for you. A cancelled document that was later corrected and resubmitted will have a related active document (often with a \'-1\' or similar suffix in its name) that reflects the true, current record — always show that one, not the cancelled original, unless specifically asked about cancellation history.\n\nIMPORTANT: Lead and Opportunity are NOT submittable doctypes in this system — every Lead and Opportunity record will always have docstatus 0, permanently, and this is completely normal, not a sign of an incomplete or draft record. NEVER filter Lead or Opportunity by docstatus, and NEVER tell the user "there are no submitted opportunities/leads" — that framing is meaningless for these two doctypes. Instead, use the actual status field (e.g. Open, Quotation, Converted, Lost for Lead; Open, Quotation, Converted, Lost for Opportunity) to determine what counts as active, hot, or high-value.\n\nFor Project: "active" means status = "Open" (not Completed/Cancelled) — never say there are no active projects without checking the actual status field first. Project also stores estimated_costing directly on the document itself — always fetch and report this field directly for "cost" questions rather than deflecting to linked Purchase/Sales Invoices or claiming cost data isn\'t tracked.\n\nCRITICAL — date arithmetic: NEVER state a number of days between two dates (e.g. "~X days from today", "due in Y weeks") without actually calculating it correctly from the real calendar dates involved. Manually estimating or guessing an elapsed-day count has repeatedly produced wildly wrong numbers (off by hundreds of days). If you need to express a duration, work it out precisely from the actual date values you already have — do not round, approximate, or guess.';
+  var AIQF_SYS_CORE = 'You are AssistIQ, an AI-powered ERP assistant for Frappe/ERPNext. ALWAYS use tools to fetch real data — never invent field values, IDs, or numbers. Be concise. Use markdown tables. fields MUST always be an array.\n\nWhen the user asks you to draft, create, or make a document (e.g. "draft a quotation", "create a PO"): you MUST call fac_create_document to actually create a real draft record in Frappe. NEVER just describe or format a fake document in chat text — that is misleading, since the user cannot tell the difference between a real record and text you made up. After creating, always state the real document name/ID Frappe returned (e.g. "Created draft Quotation QTN-2026-00045") so the user can open and review it themselves before doing anything with it.\n\nCreated documents are drafts only (docstatus 0) unless the user explicitly asks you to submit/finalize it — submitting is a separate, deliberate action via fac_submit_document, and you should confirm with the user before doing it, since submission can trigger real business effects (emails, stock/GL updates, workflow states) that are hard to undo.\n\nIf a create or update fails (missing required field, invalid link, permission error), tell the user exactly what failed and what value is needed — do not silently make one up to force it through.\n\nFor workflow actions (approve/reject/etc.): first call fac_get_workflow_state to see the real current state and valid actions, confirm the action with the user, then call fac_run_workflow_action with the exact action name. Never claim an action succeeded without calling the tool.\n\nWhen a question mentions "today", "this week", or a date range, filter on the document\'s actual business date field (e.g. transaction_date, posting_date, from_date) — never the internal "creation" timestamp, which reflects when the record was saved, not the business date it represents. Before telling the user nothing matches, double check you used the correct date field and the correct format (YYYY-MM-DD), since concluding "none found" when records genuinely exist is worse than a wrong number — it looks like the system has no data at all. You MUST pass {"date_range":"today"} (or this_week/this_month/last_7_days/last_30_days) as the filter for ANY question mentioning those words — never compute the date yourself or reason about it in your head, even for a quick-seeming check. Manually reasoning about "today" has repeatedly produced wrong answers; the date_range filter is always correct and costs nothing extra to use.\n\nWhen a question uses a plain-English status word ("pending", "open", "outstanding", "overdue", "active", "completed"), map it to what that word actually means for the doctype in question — usually docstatus and a real status value or range — rather than searching for that literal word as an exact status string, since most doctypes do not have a status literally called "Pending". For Sales/Purchase Orders and Invoices, "pending"/"open" normally means docstatus 1 and status not in ("Completed","Closed","Cancelled"). If you already showed the user matching records under one phrasing (e.g. "open orders"), and they then ask for the same thing using a different everyday word (e.g. "pending orders"), recognize it as the same request and answer directly instead of reporting no results.\n\nCritically: "pending" does NOT mean docstatus 0 (draft/unsaved) — a submitted Purchase/Sales Order with status like "To Receive and Bill" or "To Deliver and Bill" absolutely counts as pending, since it is real, submitted, and awaiting completion. Never filter by docstatus 0 when asked for "pending" items unless the user explicitly says "draft".\n\nWhen displaying a date for Purchase/Sales Invoices or Orders, always use the real business date field (posting_date or transaction_date) that fac_list_documents/fac_analyze_data returns — never the internal "creation" timestamp, even if you have to explicitly request that field. Showing the wrong date is a real, visible error to the user, not a minor detail.\n\nFor "delayed delivery" or "overdue" questions on Purchase Orders: Purchase Order Items have a schedule_date field — compare it to today\'s date for any order not yet fully received (per_received under 100) instead of saying you lack the data to answer; you likely already have exactly what is needed.\n\nFor "profit and loss" or "P&L" style questions, do NOT rely on fac_generate_report with the native "Profit and Loss" report — it requires precise standard filter parameters (company, fiscal_year, period) that are easy to get wrong, and getting them wrong silently returns an empty result that looks like "no transactions" even when real data exists. Instead, build a simple, reliable approximation yourself: use fac_analyze_data to sum Sales Invoice grand_total for the period (revenue) and sum Purchase Invoice grand_total for the same period (costs), then present revenue, costs, and the difference — clearly labelled as a simplified estimate, not the exact statutory P&L.\n\nIn this system, CRM follow-ups and reminders are tracked as Task records (with an exp_end_date), not as Event or ToDo records — when asked about "follow-ups due" or similar, check Task first.\n\nIn this system, "production orders" or "manufacturing orders" correspond to the Work Order doctype — there is no doctype called "Production Order" (that is an old, deprecated ERPNext term; do not assume it means the feature is unavailable). Always call fac_list_documents on Work Order directly before concluding none exist — never answer from memory or assume the module is disabled. For "raw materials required for production", Work Order documents have a required_items child table listing exactly this — fetch the Work Order\'s own required_items field rather than guessing or asking the user to specify a BOM manually. For "delayed manufacturing orders", compare each Work Order\'s planned_end_date to today for any order whose status is not yet Completed or Stopped.\n\nFor Asset records: employee assignment is tracked in the custodian field (an Employee ID), not department — always check custodian for "assigned to an employee" style questions. Maintenance scheduling is tracked via the maintenance_required checkbox field (1 or 0) directly on the Asset — check this field for "due for maintenance" style questions instead of assuming the information is unavailable.\n\nFor questions involving totals, averages, counts, or breakdowns by category (sales this month, average order value, invoices by customer): use fac_analyze_data instead of fetching raw records and calculating in your head — this keeps numbers accurate and responses shorter.\n\nFor questions comparing what different suppliers charge for the SAME item ("which supplier is cheapest for X", "compare prices across suppliers", "has the price changed over time"), use fac_compare_supplier_pricing instead of trying to compute this yourself — it correctly joins item-level pricing with the supplier on each purchase document, which fac_analyze_data cannot do.\n\nFor "what needs reordering" or "what\'s running low" style questions, use fac_predict_reorder instead of just checking reorder levels yourself — it factors in actual recent consumption rate to estimate days until stockout, so items barely below reorder level but moving slowly aren\'t reported with the same urgency as fast-moving items about to run out.\n\nFor "how much of X will we need" or "forecast demand" style questions, use fac_forecast_demand. This is a simple linear trend on the last 12 months of sales — always tell the user plainly that this is a basic estimate based on recent trend, not a guaranteed prediction, and mention if history was too short/sparse to trust the projection.\n\nWhen creating a new document based on a past record (e.g. "same items as my last order", "draft like the previous one"): only copy the fields the user actually asked to reuse (typically items/quantities). NEVER copy over the reference document\'s date, status, naming, or other document-specific fields — new documents should use today\'s date and a fresh Draft status unless the user explicitly asks for a different date.\n\nWhen reporting a document\'s current state (e.g. from fac_get_workflow_state), always state the actual state value returned by the tool clearly (e.g. "Draft", "Pending Approval") — never say vague things like "not yet set" or "pending" unless that is the literal state value.\n\nFor trends over time, comparisons across categories, or breakdowns (sales by month, top items, status distribution), prefer fac_create_chart over a markdown table — first get the numbers via fac_analyze_data or fac_list_documents, then call fac_create_chart to visualize them. The chart renders directly in the chat; do not also repeat the same numbers as a table or wall of text afterward, just briefly describe what it shows.\n\nBe token-efficient: when calling fac_get_document or fac_list_documents, always pass "fields" limited to only what the question actually needs (e.g. ["customer","grand_total","status"]) rather than fetching the whole document. Keep your own text responses concise — lead with the answer, skip restating the question or the tool calls you made.\n\nAlways display monetary amounts with the correct currency symbol for that document\'s own currency field — never default to $ or show a bare number with no currency indicator. This company\'s documents are in EUR, so amounts should be shown as e.g. \u20ac1,000 (or "EUR 1,000"), never $1,000 or plain 1,000. If you are not certain which currency a figure is in, fetch the currency field rather than guessing or omitting it. When summing or comparing amounts across multiple documents in a table, state the currency once clearly (e.g. in a column header or a note above the table) rather than repeating it inconsistently or omitting it on some rows.\n\nUnless the user explicitly asks for cancelled, voided, or historical/amended records, ALWAYS exclude documents with docstatus 2 (Cancelled) from any list, count, sum, or analysis — always pass a filter excluding docstatus 2, never assume the underlying data source already excludes them for you. A cancelled document that was later corrected and resubmitted will have a related active document (often with a \'-1\' or similar suffix in its name) that reflects the true, current record — always show that one, not the cancelled original, unless specifically asked about cancellation history.\n\nIMPORTANT: Lead and Opportunity are NOT submittable doctypes in this system — every Lead and Opportunity record will always have docstatus 0, permanently, and this is completely normal, not a sign of an incomplete or draft record. NEVER filter Lead or Opportunity by docstatus, and NEVER tell the user "there are no submitted opportunities/leads" — that framing is meaningless for these two doctypes. Instead, use the actual status field (e.g. Open, Quotation, Converted, Lost for Lead; Open, Quotation, Converted, Lost for Opportunity) to determine what counts as active, hot, or high-value.\n\nFor Project: "active" means status = "Open" (not Completed/Cancelled) — never say there are no active projects without checking the actual status field first. Project also stores estimated_costing directly on the document itself — always fetch and report this field directly for "cost" questions rather than deflecting to linked Purchase/Sales Invoices or claiming cost data isn\'t tracked.\n\nCRITICAL — date arithmetic: NEVER state a number of days between two dates (e.g. "~X days from today", "due in Y weeks") without actually calculating it correctly from the real calendar dates involved. Manually estimating or guessing an elapsed-day count has repeatedly produced wildly wrong numbers (off by hundreds of days). If you need to express a duration, work it out precisely from the actual date values you already have — do not round, approximate, or guess.\n\nFor customer support tickets/complaints ("open tickets", "high-priority tickets", "tickets pending X days", "customer issues"), use the Issue doctype — this system does NOT have the separate Helpdesk app installed, so there is no HD Ticket doctype; Issue is the real, correct doctype for all support-ticket questions here. Key fields: status (Open, Replied, On Hold, Resolved, Closed — "pending"/"open" means status is Open or Replied), priority (a Link to Issue Priority: High/Medium/Low), customer, opening_date (use this for "how long has this been open/pending", comparing to today), and description. Always call fac_list_documents on Issue directly before concluding no tickets exist — never say the support module isn\'t available.\n\nWhen reporting a count of "open", "active", or "pending" tickets (or any similar grouped count for other doctypes), state ONE unified total that matches exactly how many rows you list below it — never state a smaller headline number and then separately add more items afterward under a phrase like "also open" or "additionally". If the group spans multiple underlying status values (e.g. Open, Replied, On Hold all count as active), say the single combined total first, with the breakdown by individual status shown as a parenthetical or sub-list — e.g. "7 active tickets (5 Open, 1 Replied, 1 On Hold)" — so the headline number and the full list underneath always agree.\n\nFor Issue (support tickets): "open" or "active" tickets means status is Open, Replied, OR On Hold — all three represent unresolved matters still needing attention, just at different stages. Only Resolved and Closed count as done/excluded. Never treat "open" as only the literal status value "Open" — Replied and On Hold are not separate from open, they are open tickets that have had some activity.\n\nWhen the user asks to create a new Customer, call fac_show_customer_form right away instead of asking for name/mobile/email one at a time in chat text — pre-fill any details the user already gave you, leave the rest blank for them to fill in the form. Do not call fac_create_document for this case; the form handles creation itself once the user clicks Confirm. This form is currently only built for Customer — for all other doctypes (Quotation, Sales Order, Purchase Order, etc.), continue asking for details in chat text and using fac_create_document as before.\n\nSimilarly, when the user asks to create a new Lead, call fac_show_lead_form right away instead of asking for details one at a time in chat text — pre-fill any details the user already gave you. Do not call fac_create_document for this case. Forms are now built for Customer and Lead only — for all other doctypes, continue with the chat-text + fac_create_document flow as before.\n\nSimilarly, when the user asks to create a new Quotation, call fac_show_quotation_form right away instead of gathering items one at a time in chat text. If the user already named a customer, search for the real customer ID first (fac_search_documents) and pass it. If they already named specific items, search for the real item_code/item_name for each before calling the form, so it opens with correct data pre-filled — but it is fine to open the form with an empty or partial item list too, since the user can add rows themselves. Do not call fac_create_document for this case. Forms are now built for Customer, Lead, and Quotation — for all other doctypes (Sales Order, Purchase Order, Sales Invoice, etc.), continue with the chat-text + fac_create_document flow as before.\n\nSimilarly, when the user asks to create a new Sales Order, call fac_show_sales_order_form right away instead of gathering items one at a time in chat text — same pattern as Quotation: search for real customer/item IDs first if named, but it is fine to open the form empty/partial too. Do not call fac_create_document for this case. Forms are now built for Customer, Lead, Quotation, and Sales Order — for all other doctypes (Purchase Order, Sales Invoice, etc.), continue with the chat-text + fac_create_document flow as before.\n\nSimilarly, when the user asks to create a new Purchase Order, call fac_show_purchase_order_form right away instead of gathering items one at a time in chat text — same pattern: search for real supplier/item IDs first if named, but it is fine to open the form empty/partial too. Do not call fac_create_document for this case. Forms are now built for Customer, Lead, Quotation, Sales Order, and Purchase Order — for all other doctypes (Sales Invoice, etc.), continue with the chat-text + fac_create_document flow as before.\n\nSimilarly, when the user asks to create a new Sales Invoice from scratch (not from a Sales Order), call fac_show_sales_invoice_form right away instead of gathering items one at a time in chat text — same pattern: search for real customer/item IDs first if named, but it is fine to open the form empty/partial too. Do not call fac_create_document for this case. Forms are now built for Customer, Lead, Quotation, Sales Order, Purchase Order, and Sales Invoice — this covers all the doctypes with dedicated create forms for now.';
   var AIQF_SYS_OCR = 'When the user attaches an invoice, bill, or receipt (image or PDF): in your very FIRST response, before or alongside any tool calls, write out ALL extracted fields as text — supplier/vendor name, date, bill/invoice number, every item line with its exact quantity and rate, tax, and total. This is important: the raw image is only available to you for this first response: after that it is replaced with a placeholder, so any detail you have not written down in text by the end of this first response is permanently lost to you for the rest of this conversation. Only report values you can actually read; if a field is unclear or missing, say so explicitly rather than guessing.\n\nSelf-check before reporting: sum each line\'s (quantity × rate) and compare to the invoice\'s own printed subtotal. If they don\'t match, you likely misread a quantity or rate — re-examine the image and correct it before writing your summary, rather than reporting numbers that don\'t reconcile.\n\nDo ALL verification in this same first response and present ONE consolidated pre-flight summary covering everything at once: whether the supplier exists (fac_search_documents), whether this looks like a duplicate (fac_list_documents, matching supplier + bill number or supplier+amount+date), and whether each line item matches an existing Item — search using the core 1-2 word noun (e.g. "Conference Chair" not "Conference Chairs (Black)"), checking is_purchase_item/is_sales_item as relevant, using the returned "name" field as the actual item_code. If a search returns multiple candidates (e.g. searching "Industrial" could return both "Industrial Adhesive" and "Industrial Wood"), compare each against the FULL original invoice line text and pick the one that genuinely matches in meaning — do not default to the first result. If two or more remain equally plausible, list the options and ask the user to pick rather than guessing. List every issue that needs the user\'s input together in that single message — do not surface them one at a time across separate turns, since each extra round costs the user real money.\n\nAnti-hallucination guardrail: never state a new fact (a supplier name, item, amount, or any other value) in a later turn that was not already present in your own first-response extraction or explicitly provided by the user. If asked about something that doesn\'t match your recorded extraction, say so plainly rather than inventing a plausible-sounding answer.\n\nIf the supplier was not found after searching: tell the user plainly, then ask two things together in one message — (1) is the name slightly different (let them correct it), or (2) would they like you to create this Supplier now with basic details (name, country, supplier group) so the invoice can proceed. Only call fac_create_document for the Supplier if the user explicitly agrees (e.g. "yes", "create it") — if they decline or say no, do not create anything, just wait for them to resolve it another way. The same applies if an item genuinely has no match after searching: ask whether to create a new Item, but only proceed with explicit confirmation. This is not something the extraction form can help with, since it is a missing record, not a number to correct. But once supplier, all items, and tax account are resolved, do NOT ask the user to confirm quantities/rates/dates in chat text and do NOT call fac_create_document yourself. Instead call fac_show_extraction_form with everything you have, so the user reviews and edits any wrong numbers directly in an editable form and creates the document with one click, at no extra chat cost. Only fall back to fac_create_document directly (skipping the form) for simple creates where the user typed the values themselves and there is no invoice image to double-check against. As with all creates, this produces a real draft (docstatus 0) that the user should review before submitting. Also pass the invoice/bill number and date into the appropriate fields (e.g. bill_no, bill_date) so future duplicate checks have something concrete to match against.\n\nIf the invoice shows a tax amount, you MUST include it — do not silently drop it and only create the item lines. Search the Account doctype for a tax account matching each tax name/rate shown and pass it via fac_show_extraction_form\'s "taxes" array, with the correct charge_type ("On Net Total"), account_head, and rate. Never invent an account name — if you can\'t find a clear match, tell the user which tax account to use instead of leaving tax off entirely.\n\nIndian GST invoices commonly show CGST and SGST (or IGST) as separate components, e.g. "CGST @ 9%" and "SGST @ 9%" — these are two distinct tax accounts and must be passed as two separate entries in the taxes array, never combined into one "18%" line, since they post to different GL accounts. Search for each account separately (e.g. search "CGST" and "SGST" independently).\n\nIf the invoice prints an "Amount Chargeable (in words)" or "Total Invoice Value (in words)" line, use it as your primary cross-check instead of just summing your own extracted numbers — convert the words to a number and compare against your extracted grand total; if they don\'t match, you have misread something and should re-examine before proceeding.\n\nSome invoice lines are lump-sum service/license charges with no natural quantity (e.g. "License Fee: 42,000.00" with blank Qty/Rate columns) — represent these with qty 1 and rate equal to the full line amount, not qty 0 or a guessed unit price. If a line item is a service (often marked with an HSN/SAC code rather than a product code) and does not correspond to any existing product Item after searching, tell the user it may need a non-stock/service Item or a direct expense account instead of forcing a product-item match.\n\nIf the invoice supplier search returns multiple candidates, compare each against the full extracted supplier name and pick the genuine match — do not default to the first result. If genuinely ambiguous, list the candidates and ask.\n\nIf the invoice is in a different currency than the company\'s default currency, do not silently assume a 1:1 conversion rate — tell the user the invoice currency differs and ask for the correct exchange rate, or check for an existing Currency Exchange record, rather than guessing.\n\nWhen extracting fields from an image/document, mark any field you are not confident about directly next to the value, e.g. "Supplier: ABC Traders (low confidence — please verify)", rather than one blanket disclaimer at the end. Only mark fields as low-confidence if the source is genuinely unclear, blurry, or ambiguous.';
   var AIQF_TOOLS = [
     {name:'fac_list_documents',description:'List Frappe documents. For date-based questions ("today", "this week", "this month"), pass a filter like {"date_range":"today"} instead of computing a raw date yourself — the system resolves this to the correct real date field for the doctype automatically. Common values: today, this_week, this_month, last_7_days, last_30_days.',parameters:{type:'object',properties:{doctype:{type:'string'},filters:{type:'object'},fields:{type:'array',items:{type:'string'}},limit:{type:'integer',default:20}},required:['doctype','fields']}},
@@ -540,7 +541,13 @@ setTimeout(function() {
     {name:'fac_compare_supplier_pricing',description:'Compare what different suppliers have charged for the same Item across past submitted Purchase Orders/Invoices — shows average rate, latest rate, lowest/highest rate, and purchase count per supplier, sorted cheapest first. Use this for "which supplier is cheapest for X", "compare pricing across suppliers", "have prices for this item changed" style questions. For general spend/count analysis not tied to a specific item, use fac_analyze_data instead.',parameters:{type:'object',properties:{item_code:{type:'string',description:'Exact Item code, e.g. ITEM-017. Use fac_search_documents first if you only have a description.'},doctype:{type:'string',enum:['Purchase Invoice','Purchase Order'],description:'Defaults to Purchase Invoice if omitted.'}},required:['item_code']}},
     {name:'fac_predict_reorder',description:'Find items running low on stock, factoring in actual recent consumption rate — not just a flat "below reorder level" check. Returns current stock, reorder level, average daily consumption (based on recent stock movements), and an estimated number of days until stockout, so low-consumption items below reorder level aren\'t treated the same urgency as fast-moving ones. Use for "what needs reordering", "what\'s running low", "which items will run out soon" style questions.',parameters:{type:'object',properties:{warehouse:{type:'string',description:'Optional — restrict to a specific warehouse'},lookback_days:{type:'number',description:'How many days of recent stock movement to use for the consumption-rate estimate. Defaults to 90.'}}}},
     {name:'fac_forecast_demand',description:'Estimate future demand for an item using a simple linear trend fitted to its last 12 months of actual sales history. This is a basic statistical projection (linear regression on monthly totals), NOT a sophisticated ML model — it will not capture seasonality, promotions, or one-off spikes. Always present it to the user as a rough estimate based on recent trend, not a guaranteed prediction. Use for "how much X will we need next quarter", "forecast demand for X" style questions.',parameters:{type:'object',properties:{item_code:{type:'string',description:'Exact Item code'},periods_ahead:{type:'number',description:'How many future months to forecast. Defaults to 3.'}},required:['item_code']}},
-    {name:'fac_show_extraction_form',description:'After reading an attached invoice/bill and completing supplier/duplicate/item-match/tax checks via tool calls, call this ONCE to show the user an editable review form with the extracted numbers (quantities, rates, dates, tax) pre-filled. The user corrects any wrong numbers directly in the form (cheap, no extra chat needed) and clicks Confirm themselves to create the real document — you do NOT call fac_create_document for this; the form handles creation directly. Supports invoices with multiple simultaneous tax components (e.g. Indian GST invoices with separate CGST + SGST lines) via the taxes array — never combine multiple tax components into one line. After calling this, just briefly tell the user to review the form, then stop — do not repeat the numbers in chat text.',parameters:{type:'object',properties:{doctype:{type:'string',description:'e.g. Purchase Invoice, Purchase Order'},supplier:{type:'string'},bill_no:{type:'string'},bill_date:{type:'string',description:'YYYY-MM-DD'},currency:{type:'string'},items:{type:'array',items:{type:'object',properties:{item_code:{type:'string'},item_name:{type:'string'},qty:{type:'number',description:'Use 1 for lump-sum service charges with no natural quantity'},rate:{type:'number',description:'For lump-sum charges, set this to the full amount (with qty 1)'}},required:['item_code','item_name','qty','rate']}},taxes:{type:'array',description:'One entry per tax component. For Indian GST, this is normally two entries: CGST and SGST separately, each at half the total rate — never one combined line.',items:{type:'object',properties:{account_head:{type:'string',description:'Exact Account name found via fac_search_documents, e.g. "CGST 9% - IDPL"'},rate:{type:'number',description:'Percentage for this component only, e.g. 9 for CGST 9%, not the combined 18%'},description:{type:'string',description:'e.g. "CGST 9%", "SGST 9%"'}},required:['account_head','rate','description']}}},required:['doctype','supplier','items']}}
+    {name:'fac_show_extraction_form',description:'After reading an attached invoice/bill and completing supplier/duplicate/item-match/tax checks via tool calls, call this ONCE to show the user an editable review form with the extracted numbers (quantities, rates, dates, tax) pre-filled. The user corrects any wrong numbers directly in the form (cheap, no extra chat needed) and clicks Confirm themselves to create the real document — you do NOT call fac_create_document for this; the form handles creation directly. Supports invoices with multiple simultaneous tax components (e.g. Indian GST invoices with separate CGST + SGST lines) via the taxes array — never combine multiple tax components into one line. After calling this, just briefly tell the user to review the form, then stop — do not repeat the numbers in chat text.',parameters:{type:'object',properties:{doctype:{type:'string',description:'e.g. Purchase Invoice, Purchase Order'},supplier:{type:'string'},bill_no:{type:'string'},bill_date:{type:'string',description:'YYYY-MM-DD'},currency:{type:'string'},items:{type:'array',items:{type:'object',properties:{item_code:{type:'string'},item_name:{type:'string'},qty:{type:'number',description:'Use 1 for lump-sum service charges with no natural quantity'},rate:{type:'number',description:'For lump-sum charges, set this to the full amount (with qty 1)'}},required:['item_code','item_name','qty','rate']}},taxes:{type:'array',description:'One entry per tax component. For Indian GST, this is normally two entries: CGST and SGST separately, each at half the total rate — never one combined line.',items:{type:'object',properties:{account_head:{type:'string',description:'Exact Account name found via fac_search_documents, e.g. "CGST 9% - IDPL"'},rate:{type:'number',description:'Percentage for this component only, e.g. 9 for CGST 9%, not the combined 18%'},description:{type:'string',description:'e.g. "CGST 9%", "SGST 9%"'}},required:['account_head','rate','description']}}},required:['doctype','supplier','items']}},
+    {name:'fac_show_customer_form',description:'Show the user an editable form to create a new Customer, instead of asking for each field one at a time in chat text. Call this as soon as the user asks to create/add a customer, pre-filling any details they already gave you (name, mobile, email) — leave fields blank if not yet known, the user will fill them in the form itself. The user reviews, edits, and clicks Confirm themselves to create the real record — you do NOT call fac_create_document for this; the form handles creation directly. After calling this, just briefly tell the user to review the form, then stop.',parameters:{type:'object',properties:{customer_name:{type:'string'},mobile_no:{type:'string'},email_id:{type:'string'},customer_group:{type:'string',description:'Optional, e.g. Individual, Commercial'},territory:{type:'string',description:'Optional'}},required:[]}},
+    {name:'fac_show_lead_form',description:'Show the user an editable form to create a new Lead, instead of asking for each field one at a time in chat text. Call this as soon as the user asks to create/add a lead, pre-filling any details they already gave you — leave fields blank if not yet known, the user will fill them in the form itself. The user reviews, edits, and clicks Confirm themselves to create the real record — you do NOT call fac_create_document for this; the form handles creation directly. After calling this, just briefly tell the user to review the form, then stop.',parameters:{type:'object',properties:{lead_name:{type:'string'},company_name:{type:'string',description:'Optional, the lead\'s company/organization name'},mobile_no:{type:'string'},email_id:{type:'string'},source:{type:'string',description:'Optional, e.g. Website, Cold Call, Referral, Exhibition'},status:{type:'string',description:'Optional, e.g. Open, Interested'}},required:[]}},
+    {name:'fac_show_quotation_form',description:'Show the user an editable form to create a new Quotation, with an items table the user can add/remove rows in, instead of asking for each item one at a time in chat text. Call this as soon as the user asks to create a quotation, pre-filling customer and any items they already mentioned (use fac_search_documents first to find the real item_code if they gave an item name) — leave the items list empty if none given yet, the user can add rows in the form itself. The user reviews, edits quantities/rates, adds/removes items, and clicks Confirm themselves to create the real record — you do NOT call fac_create_document for this; the form handles creation directly. After calling this, just briefly tell the user to review the form, then stop.',parameters:{type:'object',properties:{customer:{type:'string',description:'Real customer ID/name found via search, if known'},valid_till:{type:'string',description:'Optional, YYYY-MM-DD'},items:{type:'array',items:{type:'object',properties:{item_code:{type:'string'},item_name:{type:'string'},qty:{type:'number'},rate:{type:'number'}},required:['item_code','item_name','qty','rate']}}},required:[]}},
+    {name:'fac_show_sales_order_form',description:'Show the user an editable form to create a new Sales Order, with an items table the user can add/remove rows in, instead of asking for each item one at a time in chat text. Call this as soon as the user asks to create a sales order, pre-filling customer and any items they already mentioned (use fac_search_documents first to find the real item_code if they gave an item name) — leave the items list empty if none given yet, the user can add rows in the form itself. The user reviews, edits quantities/rates, adds/removes items, and clicks Confirm themselves to create the real record — you do NOT call fac_create_document for this; the form handles creation directly. After calling this, just briefly tell the user to review the form, then stop.',parameters:{type:'object',properties:{customer:{type:'string',description:'Real customer ID/name found via search, if known'},delivery_date:{type:'string',description:'Optional, YYYY-MM-DD'},items:{type:'array',items:{type:'object',properties:{item_code:{type:'string'},item_name:{type:'string'},qty:{type:'number'},rate:{type:'number'}},required:['item_code','item_name','qty','rate']}}},required:[]}},
+    {name:'fac_show_purchase_order_form',description:'Show the user an editable form to create a new Purchase Order, with an items table the user can add/remove rows in, instead of asking for each item one at a time in chat text. Call this as soon as the user asks to create a purchase order, pre-filling supplier and any items they already mentioned (use fac_search_documents first to find the real item_code if they gave an item name) — leave the items list empty if none given yet, the user can add rows in the form itself. The user reviews, edits quantities/rates, adds/removes items, and clicks Confirm themselves to create the real record — you do NOT call fac_create_document for this; the form handles creation directly. After calling this, just briefly tell the user to review the form, then stop.',parameters:{type:'object',properties:{supplier:{type:'string',description:'Real supplier ID/name found via search, if known'},schedule_date:{type:'string',description:'Optional, YYYY-MM-DD'},items:{type:'array',items:{type:'object',properties:{item_code:{type:'string'},item_name:{type:'string'},qty:{type:'number'},rate:{type:'number'}},required:['item_code','item_name','qty','rate']}}},required:[]}},
+    {name:'fac_show_sales_invoice_form',description:'Show the user an editable form to create a new Sales Invoice, with an items table the user can add/remove rows in, instead of asking for each item one at a time in chat text. Call this as soon as the user asks to create an invoice, pre-filling customer and any items they already mentioned (use fac_search_documents first to find the real item_code if they gave an item name) — leave the items list empty if none given yet, the user can add rows in the form itself. The user reviews, edits quantities/rates, adds/removes items, and clicks Confirm themselves to create the real record — you do NOT call fac_create_document for this; the form handles creation directly. After calling this, just briefly tell the user to review the form, then stop.',parameters:{type:'object',properties:{customer:{type:'string',description:'Real customer ID/name found via search, if known'},items:{type:'array',items:{type:'object',properties:{item_code:{type:'string'},item_name:{type:'string'},qty:{type:'number'},rate:{type:'number'}},required:['item_code','item_name','qty','rate']}}},required:[]}}
   ];
   var AIQF_TITLE_FIELD = {
     'Item':'item_name','Customer':'customer_name','Supplier':'supplier_name','Lead':'lead_name',
@@ -656,18 +663,105 @@ setTimeout(function() {
     var slug=doctype.toLowerCase().replace(/\s+/g,'-');
     return '/app/'+slug+(name?'/'+encodeURIComponent(name):'');
   }
+  var AIQF_EMAILABLE_DOCTYPES = ['Quotation','Sales Invoice','Purchase Order'];
   function aiqf_renderDocLink(doctype,name,myGen){
     if(myGen!==undefined&&AIQF_GEN!==myGen)return;
     var wrap=document.createElement('div');
-    wrap.style.cssText='display:flex;justify-content:flex-start;margin-bottom:2px;';
+    wrap.style.cssText='display:flex;justify-content:flex-start;gap:8px;margin-bottom:2px;flex-wrap:wrap;';
     var a=document.createElement('a');
     a.href=aiqf_docUrl(doctype,name);
     a.target='_blank';a.rel='noopener';
     a.style.cssText='display:inline-flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #dbeafe;color:#0464a8;border-radius:20px;padding:8px 14px;font-size:13px;font-weight:600;text-decoration:none;';
     a.innerHTML='Open '+name+' →';
     wrap.appendChild(a);
+    if(AIQF_EMAILABLE_DOCTYPES.indexOf(doctype)!==-1){
+      var eb=document.createElement('button');
+      eb.style.cssText='display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #dbeafe;color:#0464a8;border-radius:20px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;';
+      eb.innerHTML='📧 Share via Email';
+      eb.addEventListener('click',function(){
+        isOpen=false;
+        panel.classList.remove('open');
+        overlay.classList.remove('open');
+        frappe.set_route('Form',doctype,name);
+        var tries=0;
+        var poll=setInterval(function(){
+          tries++;
+          if(window.cur_frm && cur_frm.doctype===doctype && cur_frm.docname===name && !cur_frm.is_new()){
+            clearInterval(poll);
+            try{ cur_frm.email_doc('Please find attached the '+doctype.toLowerCase()+' '+name+' for your review.'); }catch(e){}
+          }else if(tries>40){
+            clearInterval(poll);
+          }
+        },200);
+      });
+      wrap.appendChild(eb);
+    }
     msgs_el.appendChild(wrap);
     msgs_el.scrollTop=msgs_el.scrollHeight;
+  }
+  function aiqf_renderEmailForm(doctype,name){
+    var box=document.createElement('div');
+    box.style.cssText='max-width:96%;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:2px;';
+    var defaultSubject=doctype+' '+name;
+    var defaultMessage='Dear Customer,\n\nPlease find attached the '+doctype.toLowerCase()+' '+name+' for your review.\n\nRegards.';
+    box.innerHTML=
+      '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px;">Share '+name+' via Email</div>'+
+      '<label style="font-size:11px;color:#94a3b8;">To (email)<br><input id="aiqf-em-to" type="email" placeholder="customer@example.com" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+      '<label style="font-size:11px;color:#94a3b8;display:block;margin-top:8px;">Subject<br><input id="aiqf-em-subject" value="'+defaultSubject+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+      '<label style="font-size:11px;color:#94a3b8;display:block;margin-top:8px;">Message<br><textarea id="aiqf-em-message" rows="4" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;resize:vertical;">'+defaultMessage+'</textarea></label>'+
+      '<div id="aiqf-em-msg" style="font-size:12px;margin-top:8px;"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:12px;">'+
+        '<button id="aiqf-em-send" class="aiqf-form-confirm-btn" style="flex:1;background:'+AIQF_BRAND_COLOR+';color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">Send Email</button>'+
+        '<button id="aiqf-em-cancel" style="background:none;border:1px solid #e2e8f0;color:#64748b;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;">Cancel</button>'+
+      '</div>';
+    msgs_el.appendChild(box);
+    msgs_el.scrollTop=msgs_el.scrollHeight;
+
+    box.querySelector('#aiqf-em-cancel').addEventListener('click',function(){
+      box.querySelector('#aiqf-em-send').disabled=true;
+      box.querySelector('#aiqf-em-cancel').disabled=true;
+      box.querySelector('#aiqf-em-msg').innerHTML='<span style="color:#94a3b8;">Cancelled.</span>';
+    });
+
+    box.querySelector('#aiqf-em-send').addEventListener('click',function(){
+      var btn=box.querySelector('#aiqf-em-send');
+      var toVal=box.querySelector('#aiqf-em-to').value.trim();
+      if(!toVal){
+        box.querySelector('#aiqf-em-msg').innerHTML='<span style="color:#dc2626;">Recipient email is required.</span>';
+        return;
+      }
+      btn.disabled=true;btn.textContent='Sending…';
+      var subjectVal=box.querySelector('#aiqf-em-subject').value;
+      var messageVal=box.querySelector('#aiqf-em-message').value.replace(/\n/g,'<br>');
+      var fd=new FormData();
+      fd.append('recipients',toVal);
+      fd.append('subject',subjectVal);
+      fd.append('content',messageVal);
+      fd.append('doctype',doctype);
+      fd.append('name',name);
+      fd.append('send_email','1');
+      fd.append('print_html','0');
+      fd.append('send_me_a_copy','0');
+      fd.append('attach_document_print','1');
+      fetch('/api/method/frappe.core.doctype.communication.email.make',{
+        method:'POST',
+        headers:{'X-Frappe-CSRF-Token':frappe.csrf_token||'','X-Requested-With':'XMLHttpRequest'},
+        credentials:'same-origin',
+        body:fd
+      }).then(function(r){return r.json().then(function(d){return {ok:r.ok,body:d};});}).then(function(res){
+        if(!res.ok||(res.body&&res.body.exc)){
+          var em=(res.body&&(res.body.exception||res.body._server_messages||res.body.message))||'Send failed';
+          box.querySelector('#aiqf-em-msg').innerHTML='<span style="color:#dc2626;">Error: '+(typeof em==='string'?em:JSON.stringify(em))+'</span>';
+          btn.disabled=false;btn.textContent='Send Email';
+          return;
+        }
+        box.querySelector('#aiqf-em-msg').innerHTML='<span style="color:#16a34a;">✓ Email queued to '+toVal+' — may take a minute to arrive.</span>';
+        btn.textContent='✓ Sent';
+      }).catch(function(e){
+        box.querySelector('#aiqf-em-msg').innerHTML='<span style="color:#dc2626;">Error: '+e.message+'</span>';
+        btn.disabled=false;btn.textContent='Send Email';
+      });
+    });
   }
   function aiqf_renderExtractionForm(input,myGen,mySid,file){
     if(myGen!==undefined&&AIQF_GEN!==myGen)return;
@@ -777,6 +871,673 @@ setTimeout(function() {
         btn.disabled=false;btn.textContent='✓ Confirm & Create';
       });
     });
+  }
+  function aiqf_renderCustomerForm(input,myGen,mySid){
+    if(myGen!==undefined&&AIQF_GEN!==myGen)return;
+    var box=document.createElement('div');
+    box.style.cssText='max-width:96%;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:2px;';
+    box.innerHTML=
+      '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px;">Review before creating — Customer</div>'+
+      '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px;">'+
+        '<label style="font-size:11px;color:#94a3b8;">Customer Name<br><input id="aiqf-cf-name" value="'+(input.customer_name||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'+
+        '<label style="font-size:11px;color:#94a3b8;">Mobile No<br><input id="aiqf-cf-mobile" value="'+(input.mobile_no||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+        '<label style="font-size:11px;color:#94a3b8;">Email<br><input id="aiqf-cf-email" type="email" value="'+(input.email_id||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'+
+        '<label style="font-size:11px;color:#94a3b8;">Customer Group<br><input id="aiqf-cf-group" value="'+(input.customer_group||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+        '<label style="font-size:11px;color:#94a3b8;">Territory<br><input id="aiqf-cf-territory" value="'+(input.territory||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+      '</div>'+
+      '<div id="aiqf-cf-msg" style="font-size:12px;margin-top:4px;"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:12px;">'+
+        '<button id="aiqf-cf-confirm" class="aiqf-form-confirm-btn" style="flex:1;background:'+AIQF_BRAND_COLOR+';color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">✓ Confirm & Create</button>'+
+        '<button id="aiqf-cf-cancel" style="background:none;border:1px solid #e2e8f0;color:#64748b;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;">Cancel</button>'+
+      '</div>';
+    msgs_el.appendChild(box);
+    msgs_el.scrollTop=msgs_el.scrollHeight;
+
+    box.querySelector('#aiqf-cf-cancel').addEventListener('click',function(){
+      box.querySelector('#aiqf-cf-confirm').disabled=true;
+      box.querySelector('#aiqf-cf-cancel').disabled=true;
+      box.querySelector('#aiqf-cf-msg').innerHTML='<span style="color:#94a3b8;">Cancelled — nothing was created.</span>';
+      aiqf_saveMsg('assistant','[Customer form cancelled by user — nothing created]',mySid);
+    });
+
+    box.querySelector('#aiqf-cf-confirm').addEventListener('click',function(){
+      var btn=box.querySelector('#aiqf-cf-confirm');
+      var nameVal=box.querySelector('#aiqf-cf-name').value.trim();
+      if(!nameVal){
+        box.querySelector('#aiqf-cf-msg').innerHTML='<span style="color:#dc2626;">Customer Name is required.</span>';
+        return;
+      }
+      btn.disabled=true;btn.textContent='Creating…';
+      var data={customer_name:nameVal};
+      var mobileVal=box.querySelector('#aiqf-cf-mobile').value.trim();
+      var emailVal=box.querySelector('#aiqf-cf-email').value.trim();
+      var groupVal=box.querySelector('#aiqf-cf-group').value.trim();
+      var territoryVal=box.querySelector('#aiqf-cf-territory').value.trim();
+      if(mobileVal)data.mobile_no=mobileVal;
+      if(emailVal)data.email_id=emailVal;
+      if(groupVal)data.customer_group=groupVal;
+      if(territoryVal)data.territory=territoryVal;
+      aiqf_rest_create('Customer',data).then(function(res){
+        if(!res.ok){
+          var em=(res.body&&(res.body.exception||res.body._server_messages||res.body.message))||'Create failed';
+          box.querySelector('#aiqf-cf-msg').innerHTML='<span style="color:#dc2626;">Error: '+(typeof em==='string'?em:JSON.stringify(em))+'</span>';
+          btn.disabled=false;btn.textContent='✓ Confirm & Create';
+          return;
+        }
+        var doc=(res.body&&res.body.data)||{};
+        box.querySelector('#aiqf-cf-msg').innerHTML='<span style="color:#16a34a;">✓ Created '+doc.name+'.</span>';
+        btn.textContent='✓ Created';
+        box.querySelector('#aiqf-cf-cancel').style.display='none';
+        aiqf_renderDocLink('Customer',doc.name,myGen);
+        aiqf_saveMsg('assistant','Created Customer '+doc.name+' via review form (user-confirmed values).',mySid);
+      }).catch(function(e){
+        box.querySelector('#aiqf-cf-msg').innerHTML='<span style="color:#dc2626;">Error: '+e.message+'</span>';
+        btn.disabled=false;btn.textContent='✓ Confirm & Create';
+      });
+    });
+  }
+  function aiqf_renderLeadForm(input,myGen,mySid){
+    if(myGen!==undefined&&AIQF_GEN!==myGen)return;
+    var box=document.createElement('div');
+    box.style.cssText='max-width:96%;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:2px;';
+    box.innerHTML=
+      '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px;">Review before creating — Lead</div>'+
+      '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px;">'+
+        '<label style="font-size:11px;color:#94a3b8;">Lead Name<br><input id="aiqf-lf-name" value="'+(input.lead_name||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'+
+        '<label style="font-size:11px;color:#94a3b8;">Company<br><input id="aiqf-lf-company" value="'+(input.company_name||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+        '<label style="font-size:11px;color:#94a3b8;">Mobile No<br><input id="aiqf-lf-mobile" value="'+(input.mobile_no||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'+
+        '<label style="font-size:11px;color:#94a3b8;">Email<br><input id="aiqf-lf-email" type="email" value="'+(input.email_id||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+        '<label style="font-size:11px;color:#94a3b8;">Source<br><input id="aiqf-lf-source" value="'+(input.source||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px;">'+
+        '<label style="font-size:11px;color:#94a3b8;">Status<br><input id="aiqf-lf-status" value="'+(input.status||'Open')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+      '</div>'+
+      '<div id="aiqf-lf-msg" style="font-size:12px;margin-top:4px;"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:12px;">'+
+        '<button id="aiqf-lf-confirm" class="aiqf-form-confirm-btn" style="flex:1;background:'+AIQF_BRAND_COLOR+';color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">✓ Confirm & Create</button>'+
+        '<button id="aiqf-lf-cancel" style="background:none;border:1px solid #e2e8f0;color:#64748b;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;">Cancel</button>'+
+      '</div>';
+    msgs_el.appendChild(box);
+    msgs_el.scrollTop=msgs_el.scrollHeight;
+
+    box.querySelector('#aiqf-lf-cancel').addEventListener('click',function(){
+      box.querySelector('#aiqf-lf-confirm').disabled=true;
+      box.querySelector('#aiqf-lf-cancel').disabled=true;
+      box.querySelector('#aiqf-lf-msg').innerHTML='<span style="color:#94a3b8;">Cancelled — nothing was created.</span>';
+      aiqf_saveMsg('assistant','[Lead form cancelled by user — nothing created]',mySid);
+    });
+
+    box.querySelector('#aiqf-lf-confirm').addEventListener('click',function(){
+      var btn=box.querySelector('#aiqf-lf-confirm');
+      var nameVal=box.querySelector('#aiqf-lf-name').value.trim();
+      if(!nameVal){
+        box.querySelector('#aiqf-lf-msg').innerHTML='<span style="color:#dc2626;">Lead Name is required.</span>';
+        return;
+      }
+      btn.disabled=true;btn.textContent='Creating…';
+      var data={lead_name:nameVal};
+      var companyVal=box.querySelector('#aiqf-lf-company').value.trim();
+      var mobileVal=box.querySelector('#aiqf-lf-mobile').value.trim();
+      var emailVal=box.querySelector('#aiqf-lf-email').value.trim();
+      var sourceVal=box.querySelector('#aiqf-lf-source').value.trim();
+      var statusVal=box.querySelector('#aiqf-lf-status').value.trim();
+      if(companyVal)data.company_name=companyVal;
+      if(mobileVal)data.mobile_no=mobileVal;
+      if(emailVal)data.email_id=emailVal;
+      if(sourceVal)data.source=sourceVal;
+      if(statusVal)data.status=statusVal;
+      aiqf_rest_create('Lead',data).then(function(res){
+        if(!res.ok){
+          var em=(res.body&&(res.body.exception||res.body._server_messages||res.body.message))||'Create failed';
+          box.querySelector('#aiqf-lf-msg').innerHTML='<span style="color:#dc2626;">Error: '+(typeof em==='string'?em:JSON.stringify(em))+'</span>';
+          btn.disabled=false;btn.textContent='✓ Confirm & Create';
+          return;
+        }
+        var doc=(res.body&&res.body.data)||{};
+        box.querySelector('#aiqf-lf-msg').innerHTML='<span style="color:#16a34a;">✓ Created '+doc.name+'.</span>';
+        btn.textContent='✓ Created';
+        box.querySelector('#aiqf-lf-cancel').style.display='none';
+        aiqf_renderDocLink('Lead',doc.name,myGen);
+        aiqf_saveMsg('assistant','Created Lead '+doc.name+' via review form (user-confirmed values).',mySid);
+      }).catch(function(e){
+        box.querySelector('#aiqf-lf-msg').innerHTML='<span style="color:#dc2626;">Error: '+e.message+'</span>';
+        btn.disabled=false;btn.textContent='✓ Confirm & Create';
+      });
+    });
+  }
+  function aiqf_applyGstIfApplicable(data){
+    return aiqf_rest_get('Global Defaults','Global Defaults').then(function(gd){
+      var companyName=gd&&gd.default_company;
+      if(!companyName)return;
+      return aiqf_rest_get('Company',companyName).then(function(co){
+        if(!co||!co.tax_id&&!co.gstin)return;
+        var companyGstin=co.tax_id||co.gstin;
+        var companyAbbr=co.abbr;
+        if(!companyGstin||!companyAbbr)return;
+        return aiqf_rest_get('Customer',data.party_name||data.customer).then(function(cust){
+          var custGstin=cust&&(cust.tax_id||cust.gstin);
+          if(!custGstin)return;
+          var companyState=companyGstin.substring(0,2);
+          var custState=custGstin.substring(0,2);
+          if(companyState===custState){
+            data.taxes=[
+              {account_head:'Output Tax CGST - '+companyAbbr,charge_type:'On Net Total',description:'CGST @ 9.0%',rate:9},
+              {account_head:'Output Tax SGST - '+companyAbbr,charge_type:'On Net Total',description:'SGST @ 9.0%',rate:9}
+            ];
+          }else{
+            data.taxes=[
+              {account_head:'Output Tax IGST - '+companyAbbr,charge_type:'On Net Total',description:'IGST @ 18.0%',rate:18}
+            ];
+          }
+        });
+      });
+    }).catch(function(){});
+  }
+  function aiqf_renderQuotationForm(input,myGen,mySid){
+    if(myGen!==undefined&&AIQF_GEN!==myGen)return;
+    var box=document.createElement('div');
+    box.style.cssText='max-width:96%;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:2px;';
+    var rows=(input.items&&input.items.length)?input.items.slice():[{item_code:'',item_name:'',qty:1,rate:0}];
+
+    function rowHtml(it,i){
+      return '<div class="aiqf-qf-row" data-i="'+i+'" style="display:grid;grid-template-columns:1fr 1fr 60px 80px 80px 28px;gap:6px;align-items:center;margin-bottom:6px;font-size:12px;">'+
+        '<input placeholder="Item code" data-i="'+i+'" data-f="item_code" value="'+(it.item_code||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input placeholder="Item name" data-i="'+i+'" data-f="item_name" value="'+(it.item_name||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input type="number" step="any" placeholder="Qty" data-i="'+i+'" data-f="qty" value="'+(it.qty||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input type="number" step="any" placeholder="Rate" data-i="'+i+'" data-f="rate" value="'+(it.rate||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<div class="aiqf-qf-amt" data-i="'+i+'" style="text-align:right;color:#0f172a;font-weight:600;">'+((it.qty||0)*(it.rate||0)).toFixed(2)+'</div>'+
+        '<button class="aiqf-qf-remove" data-i="'+i+'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;">×</button>'+
+      '</div>';
+    }
+
+    function renderAll(){
+      box.innerHTML=
+        '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px;">Review before creating — Quotation</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'+
+          '<label style="font-size:11px;color:#94a3b8;">Customer<br><input id="aiqf-qf-customer" value="'+(input.customer||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+          '<label style="font-size:11px;color:#94a3b8;">Valid Till<br><input id="aiqf-qf-validtill" type="date" value="'+(input.valid_till||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr 60px 80px 80px 28px;gap:6px;font-size:11px;color:#94a3b8;margin-bottom:4px;"><div>Item Code</div><div>Item Name</div><div>Qty</div><div>Rate</div><div style="text-align:right;">Amount</div><div></div></div>'+
+        '<div id="aiqf-qf-rows">'+rows.map(rowHtml).join('')+'</div>'+
+        '<button id="aiqf-qf-addrow" style="background:none;border:1px dashed #cbd5e1;color:#64748b;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;margin-top:4px;">+ Add item</button>'+
+        '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#0f172a;margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;"><span>Grand Total</span><span id="aiqf-qf-total">—</span></div>'+
+        '<div id="aiqf-qf-msg" style="font-size:12px;margin-top:8px;"></div>'+
+        '<div style="display:flex;gap:8px;margin-top:12px;">'+
+          '<button id="aiqf-qf-confirm" class="aiqf-form-confirm-btn" style="flex:1;background:'+AIQF_BRAND_COLOR+';color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">✓ Confirm & Create</button>'+
+          '<button id="aiqf-qf-cancel" style="background:none;border:1px solid #e2e8f0;color:#64748b;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;">Cancel</button>'+
+        '</div>';
+      wireEvents();
+      recalc();
+    }
+
+    function syncRowsFromDom(){
+      box.querySelectorAll('.aiqf-qf-row').forEach(function(rowEl){
+        var i=parseInt(rowEl.getAttribute('data-i'),10);
+        rows[i]={
+          item_code:rowEl.querySelector('[data-f="item_code"]').value,
+          item_name:rowEl.querySelector('[data-f="item_name"]').value,
+          qty:parseFloat(rowEl.querySelector('[data-f="qty"]').value)||0,
+          rate:parseFloat(rowEl.querySelector('[data-f="rate"]').value)||0
+        };
+      });
+    }
+
+    function recalc(){
+      var subtotal=0;
+      box.querySelectorAll('.aiqf-qf-row').forEach(function(rowEl){
+        var i=rowEl.getAttribute('data-i');
+        var qty=parseFloat(rowEl.querySelector('[data-f="qty"]').value)||0;
+        var rate=parseFloat(rowEl.querySelector('[data-f="rate"]').value)||0;
+        var amt=qty*rate;
+        subtotal+=amt;
+        box.querySelector('.aiqf-qf-amt[data-i="'+i+'"]').textContent=amt.toFixed(2);
+      });
+      var totalEl=box.querySelector('#aiqf-qf-total');
+      if(totalEl)totalEl.textContent=subtotal.toFixed(2);
+    }
+
+    function wireEvents(){
+      box.querySelectorAll('.aiqf-qf-row input').forEach(function(el){el.addEventListener('input',recalc);});
+      box.querySelector('#aiqf-qf-addrow').addEventListener('click',function(){
+        syncRowsFromDom();
+        rows.push({item_code:'',item_name:'',qty:1,rate:0});
+        renderAll();
+      });
+      box.querySelectorAll('.aiqf-qf-remove').forEach(function(b){
+        b.addEventListener('click',function(){
+          syncRowsFromDom();
+          var i=parseInt(b.getAttribute('data-i'),10);
+          if(rows.length>1)rows.splice(i,1);
+          renderAll();
+        });
+      });
+      box.querySelector('#aiqf-qf-cancel').addEventListener('click',function(){
+        box.querySelector('#aiqf-qf-confirm').disabled=true;
+        box.querySelector('#aiqf-qf-cancel').disabled=true;
+        box.querySelector('#aiqf-qf-msg').innerHTML='<span style="color:#94a3b8;">Cancelled — nothing was created.</span>';
+        aiqf_saveMsg('assistant','[Quotation form cancelled by user — nothing created]',mySid);
+      });
+      box.querySelector('#aiqf-qf-confirm').addEventListener('click',function(){
+        syncRowsFromDom();
+        var btn=box.querySelector('#aiqf-qf-confirm');
+        var customerVal=box.querySelector('#aiqf-qf-customer').value.trim();
+        if(!customerVal){
+          box.querySelector('#aiqf-qf-msg').innerHTML='<span style="color:#dc2626;">Customer is required.</span>';
+          return;
+        }
+        var cleanItems=rows.filter(function(r){return r.item_code&&r.qty>0;}).map(function(r){return {item_code:r.item_code,qty:r.qty,rate:r.rate};});
+        if(!cleanItems.length){
+          box.querySelector('#aiqf-qf-msg').innerHTML='<span style="color:#dc2626;">At least one item with a code and quantity is required.</span>';
+          return;
+        }
+        btn.disabled=true;btn.textContent='Creating…';
+        var data={quotation_to:'Customer',party_name:customerVal,items:cleanItems};
+        var validTillVal=box.querySelector('#aiqf-qf-validtill').value;
+        if(validTillVal)data.valid_till=validTillVal;
+        aiqf_applyGstIfApplicable(data).then(function(){
+        return aiqf_rest_create('Quotation',data);}).then(function(res){
+          if(!res.ok){
+            var em=(res.body&&(res.body.exception||res.body._server_messages||res.body.message))||'Create failed';
+            box.querySelector('#aiqf-qf-msg').innerHTML='<span style="color:#dc2626;">Error: '+(typeof em==='string'?em:JSON.stringify(em))+'</span>';
+            btn.disabled=false;btn.textContent='✓ Confirm & Create';
+            return;
+          }
+          var doc=(res.body&&res.body.data)||{};
+          box.querySelector('#aiqf-qf-msg').innerHTML='<span style="color:#16a34a;">✓ Created '+doc.name+' as draft.</span>';
+          btn.textContent='✓ Created';
+          box.querySelector('#aiqf-qf-cancel').style.display='none';
+          aiqf_renderDocLink('Quotation',doc.name,myGen);
+          aiqf_saveMsg('assistant','Created draft Quotation '+doc.name+' via review form (user-confirmed values).',mySid);
+        }).catch(function(e){
+          box.querySelector('#aiqf-qf-msg').innerHTML='<span style="color:#dc2626;">Error: '+e.message+'</span>';
+          btn.disabled=false;btn.textContent='✓ Confirm & Create';
+        });
+      });
+    }
+
+    msgs_el.appendChild(box);
+    renderAll();
+    msgs_el.scrollTop=msgs_el.scrollHeight;
+  }
+  function aiqf_renderSalesOrderForm(input,myGen,mySid){
+    if(myGen!==undefined&&AIQF_GEN!==myGen)return;
+    var box=document.createElement('div');
+    box.style.cssText='max-width:96%;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:2px;';
+    var rows=(input.items&&input.items.length)?input.items.slice():[{item_code:'',item_name:'',qty:1,rate:0}];
+
+    function rowHtml(it,i){
+      return '<div class="aiqf-so-row" data-i="'+i+'" style="display:grid;grid-template-columns:1fr 1fr 60px 80px 80px 28px;gap:6px;align-items:center;margin-bottom:6px;font-size:12px;">'+
+        '<input placeholder="Item code" data-i="'+i+'" data-f="item_code" value="'+(it.item_code||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input placeholder="Item name" data-i="'+i+'" data-f="item_name" value="'+(it.item_name||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input type="number" step="any" placeholder="Qty" data-i="'+i+'" data-f="qty" value="'+(it.qty||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input type="number" step="any" placeholder="Rate" data-i="'+i+'" data-f="rate" value="'+(it.rate||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<div class="aiqf-so-amt" data-i="'+i+'" style="text-align:right;color:#0f172a;font-weight:600;">'+((it.qty||0)*(it.rate||0)).toFixed(2)+'</div>'+
+        '<button class="aiqf-so-remove" data-i="'+i+'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;">×</button>'+
+      '</div>';
+    }
+
+    function renderAll(){
+      box.innerHTML=
+        '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px;">Review before creating — Sales Order</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'+
+          '<label style="font-size:11px;color:#94a3b8;">Customer<br><input id="aiqf-so-customer" value="'+(input.customer||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+          '<label style="font-size:11px;color:#94a3b8;">Delivery Date<br><input id="aiqf-so-deliverydate" type="date" value="'+(input.delivery_date||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr 60px 80px 80px 28px;gap:6px;font-size:11px;color:#94a3b8;margin-bottom:4px;"><div>Item Code</div><div>Item Name</div><div>Qty</div><div>Rate</div><div style="text-align:right;">Amount</div><div></div></div>'+
+        '<div id="aiqf-so-rows">'+rows.map(rowHtml).join('')+'</div>'+
+        '<button id="aiqf-so-addrow" style="background:none;border:1px dashed #cbd5e1;color:#64748b;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;margin-top:4px;">+ Add item</button>'+
+        '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#0f172a;margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;"><span>Grand Total</span><span id="aiqf-so-total">—</span></div>'+
+        '<div id="aiqf-so-msg" style="font-size:12px;margin-top:8px;"></div>'+
+        '<div style="display:flex;gap:8px;margin-top:12px;">'+
+          '<button id="aiqf-so-confirm" class="aiqf-form-confirm-btn" style="flex:1;background:'+AIQF_BRAND_COLOR+';color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">✓ Confirm & Create</button>'+
+          '<button id="aiqf-so-cancel" style="background:none;border:1px solid #e2e8f0;color:#64748b;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;">Cancel</button>'+
+        '</div>';
+      wireEvents();
+      recalc();
+    }
+
+    function syncRowsFromDom(){
+      box.querySelectorAll('.aiqf-so-row').forEach(function(rowEl){
+        var i=parseInt(rowEl.getAttribute('data-i'),10);
+        rows[i]={
+          item_code:rowEl.querySelector('[data-f="item_code"]').value,
+          item_name:rowEl.querySelector('[data-f="item_name"]').value,
+          qty:parseFloat(rowEl.querySelector('[data-f="qty"]').value)||0,
+          rate:parseFloat(rowEl.querySelector('[data-f="rate"]').value)||0
+        };
+      });
+    }
+
+    function recalc(){
+      var subtotal=0;
+      box.querySelectorAll('.aiqf-so-row').forEach(function(rowEl){
+        var i=rowEl.getAttribute('data-i');
+        var qty=parseFloat(rowEl.querySelector('[data-f="qty"]').value)||0;
+        var rate=parseFloat(rowEl.querySelector('[data-f="rate"]').value)||0;
+        var amt=qty*rate;
+        subtotal+=amt;
+        box.querySelector('.aiqf-so-amt[data-i="'+i+'"]').textContent=amt.toFixed(2);
+      });
+      var totalEl=box.querySelector('#aiqf-so-total');
+      if(totalEl)totalEl.textContent=subtotal.toFixed(2);
+    }
+
+    function wireEvents(){
+      box.querySelectorAll('.aiqf-so-row input').forEach(function(el){el.addEventListener('input',recalc);});
+      box.querySelector('#aiqf-so-addrow').addEventListener('click',function(){
+        syncRowsFromDom();
+        rows.push({item_code:'',item_name:'',qty:1,rate:0});
+        renderAll();
+      });
+      box.querySelectorAll('.aiqf-so-remove').forEach(function(b){
+        b.addEventListener('click',function(){
+          syncRowsFromDom();
+          var i=parseInt(b.getAttribute('data-i'),10);
+          if(rows.length>1)rows.splice(i,1);
+          renderAll();
+        });
+      });
+      box.querySelector('#aiqf-so-cancel').addEventListener('click',function(){
+        box.querySelector('#aiqf-so-confirm').disabled=true;
+        box.querySelector('#aiqf-so-cancel').disabled=true;
+        box.querySelector('#aiqf-so-msg').innerHTML='<span style="color:#94a3b8;">Cancelled — nothing was created.</span>';
+        aiqf_saveMsg('assistant','[Sales Order form cancelled by user — nothing created]',mySid);
+      });
+      box.querySelector('#aiqf-so-confirm').addEventListener('click',function(){
+        syncRowsFromDom();
+        var btn=box.querySelector('#aiqf-so-confirm');
+        var customerVal=box.querySelector('#aiqf-so-customer').value.trim();
+        if(!customerVal){
+          box.querySelector('#aiqf-so-msg').innerHTML='<span style="color:#dc2626;">Customer is required.</span>';
+          return;
+        }
+        var cleanItems=rows.filter(function(r){return r.item_code&&r.qty>0;}).map(function(r){return {item_code:r.item_code,qty:r.qty,rate:r.rate};});
+        if(!cleanItems.length){
+          box.querySelector('#aiqf-so-msg').innerHTML='<span style="color:#dc2626;">At least one item with a code and quantity is required.</span>';
+          return;
+        }
+        btn.disabled=true;btn.textContent='Creating…';
+        var data={customer:customerVal,items:cleanItems};
+        var deliveryDateVal=box.querySelector('#aiqf-so-deliverydate').value;
+        if(deliveryDateVal)data.delivery_date=deliveryDateVal;
+        aiqf_rest_create('Sales Order',data).then(function(res){
+          if(!res.ok){
+            var em=(res.body&&(res.body.exception||res.body._server_messages||res.body.message))||'Create failed';
+            box.querySelector('#aiqf-so-msg').innerHTML='<span style="color:#dc2626;">Error: '+(typeof em==='string'?em:JSON.stringify(em))+'</span>';
+            btn.disabled=false;btn.textContent='✓ Confirm & Create';
+            return;
+          }
+          var doc=(res.body&&res.body.data)||{};
+          box.querySelector('#aiqf-so-msg').innerHTML='<span style="color:#16a34a;">✓ Created '+doc.name+' as draft.</span>';
+          btn.textContent='✓ Created';
+          box.querySelector('#aiqf-so-cancel').style.display='none';
+          aiqf_renderDocLink('Sales Order',doc.name,myGen);
+          aiqf_saveMsg('assistant','Created draft Sales Order '+doc.name+' via review form (user-confirmed values).',mySid);
+        }).catch(function(e){
+          box.querySelector('#aiqf-so-msg').innerHTML='<span style="color:#dc2626;">Error: '+e.message+'</span>';
+          btn.disabled=false;btn.textContent='✓ Confirm & Create';
+        });
+      });
+    }
+
+    msgs_el.appendChild(box);
+    renderAll();
+    msgs_el.scrollTop=msgs_el.scrollHeight;
+  }
+  function aiqf_renderPurchaseOrderForm(input,myGen,mySid){
+    if(myGen!==undefined&&AIQF_GEN!==myGen)return;
+    var box=document.createElement('div');
+    box.style.cssText='max-width:96%;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:2px;';
+    var rows=(input.items&&input.items.length)?input.items.slice():[{item_code:'',item_name:'',qty:1,rate:0}];
+
+    function rowHtml(it,i){
+      return '<div class="aiqf-po-row" data-i="'+i+'" style="display:grid;grid-template-columns:1fr 1fr 60px 80px 80px 28px;gap:6px;align-items:center;margin-bottom:6px;font-size:12px;">'+
+        '<input placeholder="Item code" data-i="'+i+'" data-f="item_code" value="'+(it.item_code||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input placeholder="Item name" data-i="'+i+'" data-f="item_name" value="'+(it.item_name||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input type="number" step="any" placeholder="Qty" data-i="'+i+'" data-f="qty" value="'+(it.qty||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input type="number" step="any" placeholder="Rate" data-i="'+i+'" data-f="rate" value="'+(it.rate||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<div class="aiqf-po-amt" data-i="'+i+'" style="text-align:right;color:#0f172a;font-weight:600;">'+((it.qty||0)*(it.rate||0)).toFixed(2)+'</div>'+
+        '<button class="aiqf-po-remove" data-i="'+i+'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;">×</button>'+
+      '</div>';
+    }
+
+    function renderAll(){
+      box.innerHTML=
+        '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px;">Review before creating — Purchase Order</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'+
+          '<label style="font-size:11px;color:#94a3b8;">Supplier<br><input id="aiqf-po-supplier" value="'+(input.supplier||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+          '<label style="font-size:11px;color:#94a3b8;">Schedule Date<br><input id="aiqf-po-scheduledate" type="date" value="'+(input.schedule_date||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr 60px 80px 80px 28px;gap:6px;font-size:11px;color:#94a3b8;margin-bottom:4px;"><div>Item Code</div><div>Item Name</div><div>Qty</div><div>Rate</div><div style="text-align:right;">Amount</div><div></div></div>'+
+        '<div id="aiqf-po-rows">'+rows.map(rowHtml).join('')+'</div>'+
+        '<button id="aiqf-po-addrow" style="background:none;border:1px dashed #cbd5e1;color:#64748b;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;margin-top:4px;">+ Add item</button>'+
+        '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#0f172a;margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;"><span>Grand Total</span><span id="aiqf-po-total">—</span></div>'+
+        '<div id="aiqf-po-msg" style="font-size:12px;margin-top:8px;"></div>'+
+        '<div style="display:flex;gap:8px;margin-top:12px;">'+
+          '<button id="aiqf-po-confirm" class="aiqf-form-confirm-btn" style="flex:1;background:'+AIQF_BRAND_COLOR+';color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">✓ Confirm & Create</button>'+
+          '<button id="aiqf-po-cancel" style="background:none;border:1px solid #e2e8f0;color:#64748b;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;">Cancel</button>'+
+        '</div>';
+      wireEvents();
+      recalc();
+    }
+
+    function syncRowsFromDom(){
+      box.querySelectorAll('.aiqf-po-row').forEach(function(rowEl){
+        var i=parseInt(rowEl.getAttribute('data-i'),10);
+        rows[i]={
+          item_code:rowEl.querySelector('[data-f="item_code"]').value,
+          item_name:rowEl.querySelector('[data-f="item_name"]').value,
+          qty:parseFloat(rowEl.querySelector('[data-f="qty"]').value)||0,
+          rate:parseFloat(rowEl.querySelector('[data-f="rate"]').value)||0
+        };
+      });
+    }
+
+    function recalc(){
+      var subtotal=0;
+      box.querySelectorAll('.aiqf-po-row').forEach(function(rowEl){
+        var i=rowEl.getAttribute('data-i');
+        var qty=parseFloat(rowEl.querySelector('[data-f="qty"]').value)||0;
+        var rate=parseFloat(rowEl.querySelector('[data-f="rate"]').value)||0;
+        var amt=qty*rate;
+        subtotal+=amt;
+        box.querySelector('.aiqf-po-amt[data-i="'+i+'"]').textContent=amt.toFixed(2);
+      });
+      var totalEl=box.querySelector('#aiqf-po-total');
+      if(totalEl)totalEl.textContent=subtotal.toFixed(2);
+    }
+
+    function wireEvents(){
+      box.querySelectorAll('.aiqf-po-row input').forEach(function(el){el.addEventListener('input',recalc);});
+      box.querySelector('#aiqf-po-addrow').addEventListener('click',function(){
+        syncRowsFromDom();
+        rows.push({item_code:'',item_name:'',qty:1,rate:0});
+        renderAll();
+      });
+      box.querySelectorAll('.aiqf-po-remove').forEach(function(b){
+        b.addEventListener('click',function(){
+          syncRowsFromDom();
+          var i=parseInt(b.getAttribute('data-i'),10);
+          if(rows.length>1)rows.splice(i,1);
+          renderAll();
+        });
+      });
+      box.querySelector('#aiqf-po-cancel').addEventListener('click',function(){
+        box.querySelector('#aiqf-po-confirm').disabled=true;
+        box.querySelector('#aiqf-po-cancel').disabled=true;
+        box.querySelector('#aiqf-po-msg').innerHTML='<span style="color:#94a3b8;">Cancelled — nothing was created.</span>';
+        aiqf_saveMsg('assistant','[Purchase Order form cancelled by user — nothing created]',mySid);
+      });
+      box.querySelector('#aiqf-po-confirm').addEventListener('click',function(){
+        syncRowsFromDom();
+        var btn=box.querySelector('#aiqf-po-confirm');
+        var supplierVal=box.querySelector('#aiqf-po-supplier').value.trim();
+        if(!supplierVal){
+          box.querySelector('#aiqf-po-msg').innerHTML='<span style="color:#dc2626;">Supplier is required.</span>';
+          return;
+        }
+        var cleanItems=rows.filter(function(r){return r.item_code&&r.qty>0;}).map(function(r){return {item_code:r.item_code,qty:r.qty,rate:r.rate};});
+        if(!cleanItems.length){
+          box.querySelector('#aiqf-po-msg').innerHTML='<span style="color:#dc2626;">At least one item with a code and quantity is required.</span>';
+          return;
+        }
+        btn.disabled=true;btn.textContent='Creating…';
+        var data={supplier:supplierVal,items:cleanItems};
+        var scheduleDateVal=box.querySelector('#aiqf-po-scheduledate').value;
+        if(scheduleDateVal)data.schedule_date=scheduleDateVal;
+        aiqf_rest_create('Purchase Order',data).then(function(res){
+          if(!res.ok){
+            var em=(res.body&&(res.body.exception||res.body._server_messages||res.body.message))||'Create failed';
+            box.querySelector('#aiqf-po-msg').innerHTML='<span style="color:#dc2626;">Error: '+(typeof em==='string'?em:JSON.stringify(em))+'</span>';
+            btn.disabled=false;btn.textContent='✓ Confirm & Create';
+            return;
+          }
+          var doc=(res.body&&res.body.data)||{};
+          box.querySelector('#aiqf-po-msg').innerHTML='<span style="color:#16a34a;">✓ Created '+doc.name+' as draft.</span>';
+          btn.textContent='✓ Created';
+          box.querySelector('#aiqf-po-cancel').style.display='none';
+          aiqf_renderDocLink('Purchase Order',doc.name,myGen);
+          aiqf_saveMsg('assistant','Created draft Purchase Order '+doc.name+' via review form (user-confirmed values).',mySid);
+        }).catch(function(e){
+          box.querySelector('#aiqf-po-msg').innerHTML='<span style="color:#dc2626;">Error: '+e.message+'</span>';
+          btn.disabled=false;btn.textContent='✓ Confirm & Create';
+        });
+      });
+    }
+
+    msgs_el.appendChild(box);
+    renderAll();
+    msgs_el.scrollTop=msgs_el.scrollHeight;
+  }
+  function aiqf_renderSalesInvoiceForm(input,myGen,mySid){
+    if(myGen!==undefined&&AIQF_GEN!==myGen)return;
+    var box=document.createElement('div');
+    box.style.cssText='max-width:96%;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:2px;';
+    var rows=(input.items&&input.items.length)?input.items.slice():[{item_code:'',item_name:'',qty:1,rate:0}];
+
+    function rowHtml(it,i){
+      return '<div class="aiqf-si-row" data-i="'+i+'" style="display:grid;grid-template-columns:1fr 1fr 60px 80px 80px 28px;gap:6px;align-items:center;margin-bottom:6px;font-size:12px;">'+
+        '<input placeholder="Item code" data-i="'+i+'" data-f="item_code" value="'+(it.item_code||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input placeholder="Item name" data-i="'+i+'" data-f="item_name" value="'+(it.item_name||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input type="number" step="any" placeholder="Qty" data-i="'+i+'" data-f="qty" value="'+(it.qty||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<input type="number" step="any" placeholder="Rate" data-i="'+i+'" data-f="rate" value="'+(it.rate||'')+'" style="width:100%;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">'+
+        '<div class="aiqf-si-amt" data-i="'+i+'" style="text-align:right;color:#0f172a;font-weight:600;">'+((it.qty||0)*(it.rate||0)).toFixed(2)+'</div>'+
+        '<button class="aiqf-si-remove" data-i="'+i+'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;">×</button>'+
+      '</div>';
+    }
+
+    function renderAll(){
+      box.innerHTML=
+        '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px;">Review before creating — Sales Invoice</div>'+
+        '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px;">'+
+          '<label style="font-size:11px;color:#94a3b8;">Customer<br><input id="aiqf-si-customer" value="'+(input.customer||'')+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-top:2px;"></label>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr 60px 80px 80px 28px;gap:6px;font-size:11px;color:#94a3b8;margin-bottom:4px;"><div>Item Code</div><div>Item Name</div><div>Qty</div><div>Rate</div><div style="text-align:right;">Amount</div><div></div></div>'+
+        '<div id="aiqf-si-rows">'+rows.map(rowHtml).join('')+'</div>'+
+        '<button id="aiqf-si-addrow" style="background:none;border:1px dashed #cbd5e1;color:#64748b;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;margin-top:4px;">+ Add item</button>'+
+        '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#0f172a;margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;"><span>Grand Total</span><span id="aiqf-si-total">—</span></div>'+
+        '<div id="aiqf-si-msg" style="font-size:12px;margin-top:8px;"></div>'+
+        '<div style="display:flex;gap:8px;margin-top:12px;">'+
+          '<button id="aiqf-si-confirm" class="aiqf-form-confirm-btn" style="flex:1;background:'+AIQF_BRAND_COLOR+';color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">✓ Confirm & Create</button>'+
+          '<button id="aiqf-si-cancel" style="background:none;border:1px solid #e2e8f0;color:#64748b;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;">Cancel</button>'+
+        '</div>';
+      wireEvents();
+      recalc();
+    }
+
+    function syncRowsFromDom(){
+      box.querySelectorAll('.aiqf-si-row').forEach(function(rowEl){
+        var i=parseInt(rowEl.getAttribute('data-i'),10);
+        rows[i]={
+          item_code:rowEl.querySelector('[data-f="item_code"]').value,
+          item_name:rowEl.querySelector('[data-f="item_name"]').value,
+          qty:parseFloat(rowEl.querySelector('[data-f="qty"]').value)||0,
+          rate:parseFloat(rowEl.querySelector('[data-f="rate"]').value)||0
+        };
+      });
+    }
+
+    function recalc(){
+      var subtotal=0;
+      box.querySelectorAll('.aiqf-si-row').forEach(function(rowEl){
+        var i=rowEl.getAttribute('data-i');
+        var qty=parseFloat(rowEl.querySelector('[data-f="qty"]').value)||0;
+        var rate=parseFloat(rowEl.querySelector('[data-f="rate"]').value)||0;
+        var amt=qty*rate;
+        subtotal+=amt;
+        box.querySelector('.aiqf-si-amt[data-i="'+i+'"]').textContent=amt.toFixed(2);
+      });
+      var totalEl=box.querySelector('#aiqf-si-total');
+      if(totalEl)totalEl.textContent=subtotal.toFixed(2);
+    }
+
+    function wireEvents(){
+      box.querySelectorAll('.aiqf-si-row input').forEach(function(el){el.addEventListener('input',recalc);});
+      box.querySelector('#aiqf-si-addrow').addEventListener('click',function(){
+        syncRowsFromDom();
+        rows.push({item_code:'',item_name:'',qty:1,rate:0});
+        renderAll();
+      });
+      box.querySelectorAll('.aiqf-si-remove').forEach(function(b){
+        b.addEventListener('click',function(){
+          syncRowsFromDom();
+          var i=parseInt(b.getAttribute('data-i'),10);
+          if(rows.length>1)rows.splice(i,1);
+          renderAll();
+        });
+      });
+      box.querySelector('#aiqf-si-cancel').addEventListener('click',function(){
+        box.querySelector('#aiqf-si-confirm').disabled=true;
+        box.querySelector('#aiqf-si-cancel').disabled=true;
+        box.querySelector('#aiqf-si-msg').innerHTML='<span style="color:#94a3b8;">Cancelled — nothing was created.</span>';
+        aiqf_saveMsg('assistant','[Sales Invoice form cancelled by user — nothing created]',mySid);
+      });
+      box.querySelector('#aiqf-si-confirm').addEventListener('click',function(){
+        syncRowsFromDom();
+        var btn=box.querySelector('#aiqf-si-confirm');
+        var customerVal=box.querySelector('#aiqf-si-customer').value.trim();
+        if(!customerVal){
+          box.querySelector('#aiqf-si-msg').innerHTML='<span style="color:#dc2626;">Customer is required.</span>';
+          return;
+        }
+        var cleanItems=rows.filter(function(r){return r.item_code&&r.qty>0;}).map(function(r){return {item_code:r.item_code,qty:r.qty,rate:r.rate};});
+        if(!cleanItems.length){
+          box.querySelector('#aiqf-si-msg').innerHTML='<span style="color:#dc2626;">At least one item with a code and quantity is required.</span>';
+          return;
+        }
+        btn.disabled=true;btn.textContent='Creating…';
+        var data={customer:customerVal,items:cleanItems};
+        aiqf_rest_create('Sales Invoice',data).then(function(res){
+          if(!res.ok){
+            var em=(res.body&&(res.body.exception||res.body._server_messages||res.body.message))||'Create failed';
+            box.querySelector('#aiqf-si-msg').innerHTML='<span style="color:#dc2626;">Error: '+(typeof em==='string'?em:JSON.stringify(em))+'</span>';
+            btn.disabled=false;btn.textContent='✓ Confirm & Create';
+            return;
+          }
+          var doc=(res.body&&res.body.data)||{};
+          box.querySelector('#aiqf-si-msg').innerHTML='<span style="color:#16a34a;">✓ Created '+doc.name+' as draft.</span>';
+          btn.textContent='✓ Created';
+          box.querySelector('#aiqf-si-cancel').style.display='none';
+          aiqf_renderDocLink('Sales Invoice',doc.name,myGen);
+          aiqf_saveMsg('assistant','Created draft Sales Invoice '+doc.name+' via review form (user-confirmed values).',mySid);
+        }).catch(function(e){
+          box.querySelector('#aiqf-si-msg').innerHTML='<span style="color:#dc2626;">Error: '+e.message+'</span>';
+          btn.disabled=false;btn.textContent='✓ Confirm & Create';
+        });
+      });
+    }
+
+    msgs_el.appendChild(box);
+    renderAll();
+    msgs_el.scrollTop=msgs_el.scrollHeight;
   }
   function aiqf_rest_create(dt,data){
     return fetch('/api/resource/'+encodeURIComponent(dt),{method:'POST',headers:{'Content-Type':'application/json','X-Frappe-CSRF-Token':frappe.csrf_token||'','X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',body:JSON.stringify(data||{})}).then(function(r){return r.json().then(function(d){return {ok:r.ok,body:d};});});
@@ -1179,6 +1940,24 @@ setTimeout(function() {
     }else if(norm==='show_extraction_form'){
       aiqf_renderExtractionForm(input,myGen,mySid,file);
       resolve(JSON.stringify({success:true,message:'Review form shown to the user with editable fields. The user will correct any wrong numbers directly and click Confirm themselves — this creates the document without any further action from you. Just tell the user briefly to review the form; do not call fac_create_document and do not repeat the numbers in text.'}));
+    }else if(norm==='show_customer_form'){
+      aiqf_renderCustomerForm(input,myGen,mySid);
+      resolve(JSON.stringify({success:true,message:'Customer creation form shown to the user with editable fields. The user will fill in/correct details and click Confirm themselves — this creates the record without any further action from you. Just tell the user briefly to review the form; do not call fac_create_document and do not repeat the details in text.'}));
+    }else if(norm==='show_lead_form'){
+      aiqf_renderLeadForm(input,myGen,mySid);
+      resolve(JSON.stringify({success:true,message:'Lead creation form shown to the user with editable fields. The user will fill in/correct details and click Confirm themselves — this creates the record without any further action from you. Just tell the user briefly to review the form; do not call fac_create_document and do not repeat the details in text.'}));
+    }else if(norm==='show_quotation_form'){
+      aiqf_renderQuotationForm(input,myGen,mySid);
+      resolve(JSON.stringify({success:true,message:'Quotation creation form shown to the user with an editable items table (add/remove rows supported). The user will fill in/correct details and click Confirm themselves — this creates the record without any further action from you. Just tell the user briefly to review the form; do not call fac_create_document and do not repeat the details in text.'}));
+    }else if(norm==='show_sales_order_form'){
+      aiqf_renderSalesOrderForm(input,myGen,mySid);
+      resolve(JSON.stringify({success:true,message:'Sales Order creation form shown to the user with an editable items table (add/remove rows supported). The user will fill in/correct details and click Confirm themselves — this creates the record without any further action from you. Just tell the user briefly to review the form; do not call fac_create_document and do not repeat the details in text.'}));
+    }else if(norm==='show_purchase_order_form'){
+      aiqf_renderPurchaseOrderForm(input,myGen,mySid);
+      resolve(JSON.stringify({success:true,message:'Purchase Order creation form shown to the user with an editable items table (add/remove rows supported). The user will fill in/correct details and click Confirm themselves — this creates the record without any further action from you. Just tell the user briefly to review the form; do not call fac_create_document and do not repeat the details in text.'}));
+    }else if(norm==='show_sales_invoice_form'){
+      aiqf_renderSalesInvoiceForm(input,myGen,mySid);
+      resolve(JSON.stringify({success:true,message:'Sales Invoice creation form shown to the user with an editable items table (add/remove rows supported). The user will fill in/correct details and click Confirm themselves — this creates the record without any further action from you. Just tell the user briefly to review the form; do not call fac_create_document and do not repeat the details in text.'}));
     }else{resolve(JSON.stringify({error:'Unknown tool'}));}
   });}
 
@@ -1236,7 +2015,10 @@ setTimeout(function() {
       .then(function(r){return r.json();})
       .then(function(r){
         var d=r.message||r;
-        if(d.error)throw new Error(d.error);
+        if(d.error||d.exception||d._server_messages||d.exc||!d.content||!Array.isArray(d.content)){
+          var errMsg=(d.error&&(d.error.message||d.error))||d.exception||d._server_messages||'The AI service is temporarily unavailable. Please contact your administrator.';
+          throw new Error(typeof errMsg==='string'?errMsg:JSON.stringify(errMsg));
+        }
         var tx=d.content.filter(function(b){return b.type==='text';});
         var tl=d.content.filter(function(b){return b.type==='tool_use';});
         if(d.stop_reason==='end_turn'||!tl.length){
